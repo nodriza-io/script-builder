@@ -1,0 +1,5 @@
+
+node_modules/
+accounts/
+.env
+.DS_Store
