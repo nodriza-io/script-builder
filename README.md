@@ -200,6 +200,9 @@ export PROLIBU_TOKEN=xxxxx
 # 2) Start development (watch mode)
 ./script dev dev10.prolibu.com myScript
 
+# 2b) Run the script immediately (no watch mode)
+./script dev dev10.prolibu.com myScript exec
+
 # 3) Publish to production
 ./script prod dev10.prolibu.com myScript
 ```
