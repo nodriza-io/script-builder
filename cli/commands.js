@@ -85,62 +85,66 @@ async function runDevScript(scriptName, env, domain, exec = false) {
   if (gitRepositoryUrl) {
     await apiClient.patchScript(domain, apiKey, scriptCode, { repositoryUrl: gitRepositoryUrl }, 'git');
   }
-  if (exec) await apiClient.runScript(domain, apiKey, scriptCode);
+  if (exec) {
+    await apiClient.runScript(domain, apiKey, scriptCode);
 
-  // Watch code.js and lib/
-  const libPath = path.join(scriptFolder, 'lib');
-  const chokidar = require('chokidar');
-  const watcher = chokidar.watch([codePath, libPath], {
-    persistent: true,
-    ignoreInitial: true,
-    depth: 99,
-    awaitWriteFinish: true,
-  });
-  const triggerBundle = async (event, filePath) => {
-    console.log(`[WATCH] ${event} detected in ${filePath}. Bundling and uploading...`);
-    try {
-      await bundleScript(codePath, distPath);
-      const bundledCode = fs.readFileSync(distPath, 'utf8');
-      await apiClient.patchScript(domain, apiKey, scriptCode, bundledCode, 'code');
-      if (exec) await apiClient.runScript(domain, apiKey, scriptCode);
-      console.log(`[SYNC] Bundled code uploaded for ${scriptCode}`);
-    } catch (err) {
-      console.error(`[ERROR] Bundling/upload failed: ${err.message}`);
-    }
-  };
-  watcher.on('add', (filePath) => triggerBundle('add', filePath));
-  watcher.on('change', (filePath) => triggerBundle('change', filePath));
-  watcher.on('unlink', (filePath) => triggerBundle('unlink', filePath));
+    // Watch code.js and lib/
+    const libPath = path.join(scriptFolder, 'lib');
+    const chokidar = require('chokidar');
+    const watcher = chokidar.watch([codePath, libPath], {
+      persistent: true,
+      ignoreInitial: true,
+      depth: 99,
+      awaitWriteFinish: true,
+    });
+    const triggerBundle = async (event, filePath) => {
+      console.log(`[WATCH] ${event} detected in ${filePath}. Bundling and uploading...`);
+      try {
+        await bundleScript(codePath, distPath);
+        const bundledCode = fs.readFileSync(distPath, 'utf8');
+        await apiClient.patchScript(domain, apiKey, scriptCode, bundledCode, 'code');
+        await apiClient.runScript(domain, apiKey, scriptCode);
+        console.log(`[SYNC] Bundled code uploaded for ${scriptCode}`);
+      } catch (err) {
+        console.error(`[ERROR] Bundling/upload failed: ${err.message}`);
+      }
+    };
+    watcher.on('add', (filePath) => triggerBundle('add', filePath));
+    watcher.on('change', (filePath) => triggerBundle('change', filePath));
+    watcher.on('unlink', (filePath) => triggerBundle('unlink', filePath));
 
-  // Watch variables.json
-  fs.watchFile(variablesPath, { interval: 500 }, async (curr, prev) => {
-    if (curr.mtime !== prev.mtime) {
-      const variables = JSON.parse(fs.readFileSync(variablesPath, 'utf8'));
-      await apiClient.patchScript(domain, apiKey, scriptCode, variables, 'variables');
-      if (exec) await apiClient.runScript(domain, apiKey, scriptCode);
-      console.log(`Variables for '${scriptCode}' updated after save.`);
-    }
-  });
-
-  // Watch payload.json only in dev mode
-  if (env === 'dev') {
-    fs.watchFile(payloadPath, { interval: 500 }, async (curr, prev) => {
+    // Watch variables.json
+    fs.watchFile(variablesPath, { interval: 500 }, async (curr, prev) => {
       if (curr.mtime !== prev.mtime) {
-        const payload = JSON.parse(fs.readFileSync(payloadPath, 'utf8'));
-        await apiClient.patchScript(domain, apiKey, scriptCode, payload, 'payload');
-        if (exec) await apiClient.runScript(domain, apiKey, scriptCode);
-        console.log(`Payload for '${scriptCode}' updated after save (dev only).`);
+        const variables = JSON.parse(fs.readFileSync(variablesPath, 'utf8'));
+        await apiClient.patchScript(domain, apiKey, scriptCode, variables, 'variables');
+        await apiClient.runScript(domain, apiKey, scriptCode);
+        console.log(`Variables for '${scriptCode}' updated after save.`);
       }
     });
-    // Watch lifecycleHooks.json
-    fs.watchFile(hooksPath, { interval: 500 }, async (curr, prev) => {
-      if (curr.mtime !== prev.mtime) {
-        const hooks = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
-        await apiClient.patchScript(domain, apiKey, scriptCode, hooks, 'lifecycleHooks');
-        if (exec) await apiClient.runScript(domain, apiKey, scriptCode);
-        console.log(`lifecycleHooks for '${scriptCode}' updated after save (dev only).`);
-      }
-    });
+
+    // Watch payload.json only in dev mode
+    if (env === 'dev') {
+      fs.watchFile(payloadPath, { interval: 500 }, async (curr, prev) => {
+        if (curr.mtime !== prev.mtime) {
+          const payload = JSON.parse(fs.readFileSync(payloadPath, 'utf8'));
+          await apiClient.patchScript(domain, apiKey, scriptCode, payload, 'payload');
+          await apiClient.runScript(domain, apiKey, scriptCode);
+          console.log(`Payload for '${scriptCode}' updated after save (dev only).`);
+        }
+      });
+      // Watch lifecycleHooks.json
+      fs.watchFile(hooksPath, { interval: 500 }, async (curr, prev) => {
+        if (curr.mtime !== prev.mtime) {
+          const hooks = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+          await apiClient.patchScript(domain, apiKey, scriptCode, hooks, 'lifecycleHooks');
+          await apiClient.runScript(domain, apiKey, scriptCode);
+          console.log(`lifecycleHooks for '${scriptCode}' updated after save (dev only).`);
+        }
+      });
+    }
+  } else {
+    process.exit(0);
   }
 }
 
