@@ -11,10 +11,6 @@ const domain = args[1];
 const scriptName = args[2];
 const exec = args[3] === 'exec';
 
-console.log('[DEBUG] Parsed arguments:');
-console.log('  command:', command);
-console.log('  domain:', domain);
-console.log('  scriptName:', scriptName);
 
 
 (async () => {
@@ -56,22 +52,37 @@ console.log('  scriptName:', scriptName);
     try {
       execSync(`git clone ${gitRepo} ${repoDir}`, { stdio: 'inherit' });
       console.log(`[GIT] Repository cloned to ${repoDir}`);
-      // Copy template files from /templates after successful clone
+      // Copy only lib, code.js, lifecycleHooks.json, payload.json, variables.json from templates
       const templateDir = path.join(process.cwd(), 'templates');
-      const copyRecursiveSync = (src, dest) => {
-        const exists = fs.existsSync(src);
-        const stats = exists && fs.statSync(src);
-        const isDirectory = exists && stats.isDirectory();
-        if (isDirectory) {
+      const filesToCopy = [
+        'code.js',
+        'lifecycleHooks.json',
+        'payload.json',
+        'variables.json'
+      ];
+      filesToCopy.forEach(file => {
+        const src = path.join(templateDir, file);
+        const dest = path.join(repoDir, file);
+        if (fs.existsSync(src)) fs.copyFileSync(src, dest);
+      });
+      // Copy lib folder recursively
+      const srcLib = path.join(templateDir, 'lib');
+      const destLib = path.join(repoDir, 'lib');
+      if (fs.existsSync(srcLib)) {
+        const copyLibRecursive = (src, dest) => {
           fs.mkdirSync(dest, { recursive: true });
           fs.readdirSync(src).forEach(child => {
-            copyRecursiveSync(path.join(src, child), path.join(dest, child));
+            const srcChild = path.join(src, child);
+            const destChild = path.join(dest, child);
+            if (fs.statSync(srcChild).isDirectory()) {
+              copyLibRecursive(srcChild, destChild);
+            } else {
+              fs.copyFileSync(srcChild, destChild);
+            }
           });
-        } else {
-          fs.copyFileSync(src, dest);
-        }
-      };
-      copyRecursiveSync(templateDir, repoDir);
+        };
+        copyLibRecursive(srcLib, destLib);
+      }
       console.log(`[INIT] Script structure initialized from templates in ${repoDir}`);
     } catch (err) {
       console.error(`[ERROR] Failed to clone repository: ${err.message}`);
@@ -111,11 +122,12 @@ console.log('  scriptName:', scriptName);
       fs.writeFileSync(hooksPath, JSON.stringify(hooksArr, null, 2));
       console.log(`[INFO] lifecycleHooks.json created: ${JSON.stringify(hooksArr)}`);
     }
-    await createScript(scriptName, 'dev', domain);
-    await createScript(scriptName, 'prod', domain);
+  // Pass git.repositoryUrl to createScript
+  await createScript(scriptName, 'dev', domain, gitRepo);
+  await createScript(scriptName, 'prod', domain, gitRepo);
     console.log(`Scripts '${scriptName}-dev' and '${scriptName}-prod' created for domain '${domain}'.`);
     console.log('\nNext steps:');
-    console.log(`To start development, run:\n  ./script dev ${domain} ${scriptName}`);
+    console.log(`To start development, run:\n  ./script dev ${domain} ${scriptName} exec`);
     console.log(`To start production, run:\n  ./script prod ${domain} ${scriptName}`);
   } else {
     console.log('Usage: ./script <dev|prod|create> <domain> <scriptName> [exec] [min]');

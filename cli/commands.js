@@ -9,12 +9,15 @@ const { bundleScript } = require('./bundle');
 async function runDevScript(scriptName, env, domain, exec = false) {
   const scriptCode = `${scriptName}-${env}`;
   const apiKey = config.get('apiKey', domain);
+  // Get git repository URL and minifyProductionScripts from config.json if present
   const configPath = require('path').join(process.cwd(), 'accounts', domain, 'config.json');
   let minifyProductionScripts = false;
+  let gitRepositoryUrl = '';
   if (require('fs').existsSync(configPath)) {
     try {
       const configData = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
       minifyProductionScripts = !!configData.minifyProductionScripts;
+      gitRepositoryUrl = configData.gitRepositoryUrl || '';
     } catch {}
   }
   const codePath = config.getScriptCodePath(domain, scriptName);
@@ -60,10 +63,12 @@ async function runDevScript(scriptName, env, domain, exec = false) {
     const payload = JSON.parse(fs.readFileSync(payloadPath, 'utf8'));
     await apiClient.patchScript(domain, apiKey, scriptCode, payload, 'payload');
   }
-  // Upload code
+  // Upload code and git repository URL
   await apiClient.patchScript(domain, apiKey, scriptCode, bundledCode, 'code');
+  if (gitRepositoryUrl) {
+    await apiClient.patchScript(domain, apiKey, scriptCode, { repositoryUrl: gitRepositoryUrl }, 'git');
+  }
   if (exec) await apiClient.runScript(domain, apiKey, scriptCode);
-  console.log(`Bundled code for '${scriptCode}' uploaded. Watching for changes in code.js, lib/, variables.json, and payload.json...`);
 
   // Watch code.js and lib/
   const libPath = path.join(scriptFolder, 'lib');
@@ -124,14 +129,19 @@ async function runDevScript(scriptName, env, domain, exec = false) {
 
 
 // Creates a script for the specified environment
-async function createScript(scriptName, env, domain) {
+async function createScript(scriptName, env, domain, gitRepo) {
   const scriptCode = `${scriptName}-${env}`;
   const apiKey = config.get('apiKey', domain);
   config.ensureScriptCode(domain, scriptName);
   const code = config.readScriptCode(domain, scriptName);
   const envLabel = env === 'dev' ? 'Dev' : 'Prod';
   const scriptNameLabel = `${scriptName} - ${envLabel}`;
-  await apiClient.createScriptDoc(domain, apiKey, scriptCode, scriptNameLabel, code);
+  // Add git.repositoryUrl if provided
+  const extra = {};
+  if (gitRepo) {
+    extra.git = { repositoryUrl: gitRepo };
+  }
+  await apiClient.createScriptDoc(domain, apiKey, scriptCode, scriptNameLabel, code, extra);
   console.log(`Creating script: ${scriptCode} (domain: ${domain}) as '${scriptNameLabel}'`);
 }
 
