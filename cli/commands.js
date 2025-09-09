@@ -9,7 +9,6 @@ const { bundleScript } = require('./bundle');
 async function runDevScript(scriptName, env, domain, exec = false) {
   const scriptCode = `${scriptName}-${env}`;
   const apiKey = config.get('apiKey', domain);
-  // Get git repository URL and minifyProductionScripts from config.json if present
   const configPath = require('path').join(process.cwd(), 'accounts', domain, 'config.json');
   let minifyProductionScripts = false;
   let gitRepositoryUrl = '';
@@ -26,6 +25,24 @@ async function runDevScript(scriptName, env, domain, exec = false) {
   const variablesPath = codePath.replace('code.js', 'variables.json');
   const payloadPath = codePath.replace('code.js', 'payload.json');
   const hooksPath = codePath.replace('code.js', 'lifecycleHooks.json');
+  // Setup README.md watcher after scriptFolder is initialized
+  const readmePath = path.join(scriptFolder, 'README.md');
+  if (!fs.existsSync(readmePath)) {
+    fs.writeFileSync(readmePath, '');
+  }
+  // Immediately upload README.md on script start
+  if (fs.existsSync(readmePath)) {
+    const readmeContent = fs.readFileSync(readmePath, 'utf8');
+    await apiClient.patchScript(domain, apiKey, scriptCode, readmeContent, 'readme');
+    console.log(`README.md for '${scriptCode}' uploaded to script.readme (initial sync).`);
+  }
+  fs.watchFile(readmePath, { interval: 500 }, async (curr, prev) => {
+    if (curr.mtime !== prev.mtime) {
+      const readmeContent = fs.readFileSync(readmePath, 'utf8');
+      await apiClient.patchScript(domain, apiKey, scriptCode, readmeContent, 'readme');
+      console.log(`README.md for '${scriptCode}' uploaded to script.readme.`);
+    }
+  });
 
   config.ensureScriptCode(domain, scriptName);
   if (!fs.existsSync(variablesPath)) fs.writeFileSync(variablesPath, '[]');

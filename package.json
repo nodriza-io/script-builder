@@ -1,14 +1,10 @@
 {
   "name": "script-builder",
   "version": "1.0.0",
-  "description": "CLI para crear y ejecutar scripts conectados a API",
+  "description": "CLI tool to manage and deploy scripts to Prolibu platform",
   "main": "index.js",
   "bin": {
     "build": "./index.js"
-  },
-  "scripts": {
-    "dev": "node index.js dev <scriptName>",
-    "prod": "node index.js prod <scriptName>"
   },
   "dependencies": {
     "axios": "^1.6.0",

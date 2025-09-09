@@ -7,12 +7,7 @@ Script Builder is a professional CLI tool for creating, developing, and managing
 
 ## Features
 
-- Scaffold new scripts for any domain and environment (dev/prod)
-- Local file management for code, variables, payloads, lifecycle hooks, and libraries
-- Automatic API sync on file save (PATCH to `/v2/script/{scriptCode}`)
-- Watch mode for instant updates
-- Secure API key management per domain
-- Clear separation between development and production scripts
+- Any changes to `README.md` in your script folder are automatically uploaded to the script's documentation field (`readme`) in the API, both on initial run and on file save.
 
 ---
 
