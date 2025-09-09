@@ -1,34 +1,64 @@
 
 # Script Builder CLI
 
-Script Builder is a professional CLI tool for creating, developing, and managing Prolibu v2 scripts. It provides a robust workflow for local development, API integration, and safe publishing to production.
+Script Builder CLI is a modern, developer-focused framework for building, testing, and deploying Prolibu v2 scripts with automation, modularity, and seamless API integration.
 
----
+## What you can do with Script Builder CLI
 
-## Features
-
-- Any changes to `README.md` in your script folder are automatically uploaded to the script's documentation field (`readme`) in the API, both on initial run and on file save.
+- Scaffold new scripts interactively with domain, API key, git repo, and script code prompts
+- Clone a git repository and initialize your script from templates
+- Automatically copy only essential template files (code, variables, payload, lifecycle hooks, lib)
+- Watch local files and sync changes to the API in real time
+- Bundle and minify code for production using esbuild (configurable per domain)
+- Store sensitive config per domain, including API keys and minification settings
+- Sync README.md changes to the script's documentation field in the API
+- Track and store git repository URL in the script model
+- Modular code support via a dedicated lib/ folder for reusable logic
+- Support for development and production environments with easy switching
+- Patch code, variables, payload, lifecycle hooks, and libraries to the API
+- Run scripts and view output, error, and execution time directly in the CLI
+- Generate and manage config files automatically for each domain
+- Integrate with Prolibu API for full lifecycle management
 
 ---
 
 ## Requirements
 
 [Script Builder CLI]
+- Node.js (v18 or higher recommended)
+- npm (to install dependencies)
 - A valid Prolibu API key for each domain
 ---
 
 ## Installation
 
-### Create a new script
-```bash
-./script create <domain> <scriptName>
-```
+### Step-by-step installation
 
-
-```bash
-./script prod <domain> <scriptName>
-```
-Syncs the current code and data to the production script in the API.
+1. **Clone the repository**
+  ```bash
+  git clone <your-repo-url>
+  cd script-builder
+  ```
+2. **Install dependencies**
+  ```bash
+  npm install
+  ```
+3. **(Optional) Make the CLI executable**
+  ```bash
+  chmod +x script
+  ```
+4. **(Optional) Add to your PATH for global usage**
+  ```bash
+  export PATH="$PATH:$(pwd)"
+  ```
+5. **Create a new script**
+  ```bash
+  ./script create <domain> <scriptName>
+  ```
+6. **Publish to production**
+  ```bash
+  ./script prod <domain> <scriptName>
+  ```
 
 ---
 
@@ -144,6 +174,7 @@ Promotes your current local code to **production**.
 - Triggers a run via `POST /v2/run` with `{ scriptCode: scriptCodeProd }` (optional, can be skipped with `--no-run`).
 - Prints `status`, `timeMs`, and any `output`/`error`.
 
+
 Safety features:
 
 - **Confirmation prompt** before publishing to `prod`.
@@ -157,14 +188,9 @@ Safety features:
       "scriptName": "<name>",
       "scriptCode": "<SCP-...-dev>",
       "code": "// initial",
-      "variables": [],
       "payload": {},
       "lifecycleHooks": {},
       "lib": {}
-    }
-
-- **Update Script (dev/prod)**
-  - `PATCH https://{domain}/v2/script/{scriptCode}`
   - Body:
     ```json
     { "code": "<contents of src/index.js>", "checksum": "<sha256>" }
