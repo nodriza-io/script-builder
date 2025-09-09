@@ -8,7 +8,7 @@ Script Builder is a professional CLI tool for creating, developing, and managing
 ## Features
 
 - Scaffold new scripts for any domain and environment (dev/prod)
-- Local file management for code, variables, and example payloads
+- Local file management for code, variables, payloads, lifecycle hooks, and libraries
 - Automatic API sync on file save (PATCH to `/v2/script/{scriptCode}`)
 - Watch mode for instant updates
 - Secure API key management per domain
@@ -43,9 +43,11 @@ Syncs the current code and data to the production script in the API.
 accounts/
   └── <domain>/
     └── <scriptName>/
-      ├── code.js
-      ├── variables.json
-      └── examplePayload.json
+  ├── code.js
+  ├── variables.json
+  ├── payload.json
+  ├── lifecycleHooks.json
+  └── lib/
     └── config.json
 .gitignore
 build
@@ -55,9 +57,27 @@ README.md
 ---
 
 ## API Integration
+-## Domain Configuration
 
-- **Create Script**: `POST https://<domain>/v2/script`
-- **Update Script**: `PATCH https://<domain>/v2/script/<scriptCode>`
+- For each domain, a config file is generated at:
+  ```
+  accounts/<domain>/config.json
+  ```
+- This file stores sensitive and operational data for the domain, such as:
+  - `apiKey`: Your Prolibu API key (never printed to console)
+  - `minifyProductionScripts`: Whether production scripts are minified
+  - Any other domain-specific settings
+  - The domain is inferred from the folder name, not stored in the config file.
+
+- Example:
+  ```json
+  {
+    "apiKey": "...",
+    "minifyProductionScripts": true
+  }
+  ```
+
+- The CLI uses this config for all operations, ensuring security and consistency per domain.
 ```
 
 ---
@@ -97,10 +117,13 @@ Interactive scaffolding. Prompts (in order):
 What it does:
 
   ```
-  <kebab-script-name>/
-  ├─ src/index.js
-  ├─ .prolibu/script.json   # { domain, scriptCodeDev, scriptCodeProd, projectName, lastSync }
-  ├─ package.json
+  accounts/<domain>/<scriptName>/
+  ├── code.js
+  ├── variables.json
+  ├── payload.json
+  ├── lifecycleHooks.json
+  └── lib/
+  config.json
   ```
 - Persists config in `.prolibu/script.json`.
 
@@ -109,7 +132,7 @@ What it does:
 ---
 
 ### 2) `./script dev {scriptCodeDev}`
-  1. **PATCH** `/v2/script/{scriptCodeDev}` with the current file contents (`code`), including a checksum.
+  1. **PATCH** `/v2/script/{scriptCodeDev}` with the current file contents (`code`), variables, payload, lifecycle hooks, and libraries, including a checksum.
   3. Prints run result to the console: `status`, `timeMs`, `output`/`error`.
 
 Flags (optional):
@@ -139,8 +162,11 @@ Safety features:
       "scriptName": "<name>",
       "scriptCode": "<SCP-...-dev>",
       "code": "// initial",
-      "variables": []
-    ```
+      "variables": [],
+      "payload": {},
+      "lifecycleHooks": {},
+      "lib": {}
+    }
 
 - **Update Script (dev/prod)**
   - `PATCH https://{domain}/v2/script/{scriptCode}`
@@ -192,3 +218,4 @@ cd price-sync
 - `.prolibu/` and `.env` should be in `.gitignore`.
 - `scriptCode` is the single source of truth; we do not rely on `_id`.
 - You can re-create or re-attach projects by editing `.prolibu/script.json` and re-running the commands.
+- All script folders should contain: `code.js`, `variables.json`, `payload.json`, `lifecycleHooks.json`, and a `lib/` directory for modular code.
