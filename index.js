@@ -9,14 +9,14 @@ const args = process.argv.slice(2);
 const command = args[0];
 const domain = args[1];
 const scriptName = args[2];
-const exec = args[3] === 'exec';
+const runFlag = args[3] === 'run';
 
 
 
 (async () => {
   if ((command === 'dev' || command === 'prod') && domain && scriptName) {
     await runPrompts(command, scriptName, domain);
-  await runDevScript(scriptName, command, domain, exec);
+  await runDevScript(scriptName, command, domain, runFlag);
   } else if (command === 'create' && domain && scriptName) {
     // Prompt for gitRepo first
     const inquirer = await import('inquirer');
@@ -127,9 +127,9 @@ const exec = args[3] === 'exec';
   await createScript(scriptName, 'prod', domain, gitRepo);
     console.log(`Scripts '${scriptName}-dev' and '${scriptName}-prod' created for domain '${domain}'.`);
     console.log('\nNext steps:');
-    console.log(`To start development, run:\n  ./script dev ${domain} ${scriptName} exec`);
+  console.log(`To start development, run:\n  ./script dev ${domain} ${scriptName} run`);
     console.log(`To start production, run:\n  ./script prod ${domain} ${scriptName}`);
   } else {
-    console.log('Usage: ./script <dev|prod|create> <domain> <scriptName> [exec] [min]');
+  console.log('Usage: ./script <dev|prod|create> <domain> <scriptName> [run] [min]');
   }
 })();

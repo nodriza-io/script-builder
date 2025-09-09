@@ -10,7 +10,7 @@ Key features:
 - Interactive script scaffolding (domain, API key, git repo, script code)
 - Git repo cloning and template-based initialization
 - Essential template file copying
-- Real-time file watching and API sync (with exec)
+- Real-time file watching and API sync (with run)
 - Bundling/minification for production (esbuild, per domain config)
 - Per-domain config (API keys, minification, git repo URL)
 - Automatic README.md sync to API
@@ -46,8 +46,8 @@ chmod +x script # optional
 ./script prod <domain> <scriptName>
 
 # Live watch mode (sync on change)
-./script dev <domain> <scriptName> exec
-./script prod <domain> <scriptName> exec
+./script dev <domain> <scriptName> run
+./script prod <domain> <scriptName> run
 ```
 
 ---
@@ -113,7 +113,7 @@ Common issues:
 - API key errors: Ensure your API key is valid and present in the config file.
 - Permission denied: Run `chmod +x script` if you see permission errors.
 - Bundling failures: Check Node.js version and esbuild installation.
-- File not syncing: Use exec/watch mode for live updates.
+- File not syncing: Use run/watch mode for live updates.
 
 
 ---

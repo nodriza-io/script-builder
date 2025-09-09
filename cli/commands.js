@@ -6,7 +6,7 @@ const { bundleScript } = require('./bundle');
 
 
 // Runs the script in the specified environment and watches code.js for changes
-async function runDevScript(scriptName, env, domain, exec = false) {
+async function runDevScript(scriptName, env, domain, run = false) {
   const scriptCode = `${scriptName}-${env}`;
   const apiKey = config.get('apiKey', domain);
   const configPath = require('path').join(process.cwd(), 'accounts', domain, 'config.json');
@@ -85,7 +85,7 @@ async function runDevScript(scriptName, env, domain, exec = false) {
   if (gitRepositoryUrl) {
     await apiClient.patchScript(domain, apiKey, scriptCode, { repositoryUrl: gitRepositoryUrl }, 'git');
   }
-  if (exec) {
+  if (run) {
     await apiClient.runScript(domain, apiKey, scriptCode);
 
     // Watch code.js and lib/
