@@ -140,7 +140,7 @@ Flags (optional):
 
 ---
 
-### 3) `./script publish`
+### 3) `./script prod <domain> <scriptName>`
 
 Promotes your current local code to **production**.
 
@@ -194,21 +194,14 @@ Auth header in all cases: `Authorization: Bearer <PROLIBU_TOKEN>`
 ```bash
 export PROLIBU_TOKEN=xxxxx
 
-# 1) Scaffold
-./bin/builder create
-# Script Name: Price Sync
-# Domain: dev10.prolibu.com
-# Script Code (dev): SCP-PRICE-SYNC-dev
-# Script Code (prod): SCP-PRICE-SYNC-prod  # or leave blank to auto-derive
+# 1) Create a new script
+./script create dev10.prolibu.com myScript
 
-cd price-sync
+# 2) Start development (watch mode)
+./script dev dev10.prolibu.com myScript
 
-# 2) Develop: watch + patch + run (against dev)
-../bin/builder dev SCP-PRICE-SYNC-dev
-
-# 3) Publish: push current code to prod
-../bin/builder publish
-# (confirm) Are you sure you want to publish to SCP-PRICE-SYNC-prod? yes
+# 3) Publish to production
+./script prod dev10.prolibu.com myScript
 ```
 
 ---
