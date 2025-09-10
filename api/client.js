@@ -1,11 +1,11 @@
-// GET /v2/script/run with body { id: scriptCode }
+// GET /v2/script/run with body { scriptId: scriptCode }
 async function runScript(domain, apiKey, scriptCode) {
   const url = `https://${domain}/v2/script/run`;
   try {
     const response = await axios({
       method: 'get',
       url,
-      data: { id: scriptCode },
+      data: { scriptId: scriptCode },
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
