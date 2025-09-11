@@ -123,15 +123,19 @@ You can import libraries in your scripts from:
 
 You can use either `require()` (recommended for compatibility) or `import` if your environment supports ES modules.
 
+
 This allows you to share utilities and vendor integrations across all scripts in the project, or keep script-specific logic in the local lib folder.
-  ├── code.js
-  ├── variables.json
-  ├── payload.json
-  ├── lifecycleHooks.json
-  └── lib/
-    └── config.json
+
+```
+<script-folder>/
+├── code.js
+├── variables.json
+├── payload.json
+├── lifecycleHooks.json
+└── lib/
+  └── config.json
 .gitignore
-build
+build/
 README.md
 ```
 
