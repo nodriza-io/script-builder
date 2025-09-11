@@ -93,14 +93,26 @@ If you provide all flags, the CLI runs non-interactively:
 
 ## Project Structure
 
+
 ```
 accounts/
-  └── <domain>/
-    └── <scriptName>/
+└── <domain>/
+  └── <scriptName>/
+    ├── code.js
+    ├── variables.json
+    ├── payload.json
+    ├── lifecycleHooks.json
+    └── lib/
+      ├── utils/
+      ├── vendors/
+      └── config.json
 lib/
-  └── utils/
-  └── vendors/
-  └── ...
+├── utils/
+├── vendors/
+└── ...
+.gitignore
+build/
+README.md
 ```
 
 ## Importing libraries in your scripts
