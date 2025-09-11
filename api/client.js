@@ -21,34 +21,36 @@ async function runScript(domain, apiKey, scriptCode) {
     }
     const color = (str, c) => chalk ? chalk.default[c](str) : str;
     const bold = (str, c) => chalk ? chalk.default[c].bold(str) : str;
+
+    const gray = (str) => chalk ? chalk.default.gray(str) : str;
+    const green = (str) => chalk ? chalk.default.green(str) : str;
+    const red = (str) => chalk ? chalk.default.red(str) : str;
+    // Errors block
     if (result.error) {
+      console.log(`\n${red('[ERRORS] ' + '-'.repeat(60))}\n`);
       console.log(bold('Error:', 'red'), color(result.error, 'red'));
       if (result.errorStack) {
-        console.log(color('Stack trace:', 'yellow'));
+        console.log(color('Stack trace:', 'red'));
         console.log(result.errorStack);
       }
-    } else {
-      console.log(bold('No errors.', 'yellow'));
-      if (result.output !== undefined) {
-        console.log(bold('Output:', 'green'));
-        console.dir(result.output, { depth: null, colors: true });
-      } else {
-        console.log(color('No output.', 'blue'));
-      }
     }
-    // Always show input
+    // Input block
     if (result.input !== undefined) {
-      console.log(bold('Input:', 'cyan'));
+      const blue = (str) => chalk ? chalk.default.blue(str) : str;
+      console.log(`\n${blue('[INPUT] ' + '-'.repeat(60))}\n`);
       console.dir(result.input, { depth: null, colors: true });
     }
-    // Show logs in magenta
-    if (Array.isArray(result.logs) && result.logs.length > 0) {
-      console.log(bold('Logs:', 'magenta'));
-      result.logs.forEach(l => console.log(color(l, 'magenta')));
+    // Output block
+    if (result.output !== undefined) {
+      console.log(`\n${green('[OUTPUT] ' + '-'.repeat(60))}\n`);
+      console.dir(result.output, { depth: null, colors: true });
     }
+    // Execution time
     if (result.timeMs !== undefined) {
-      console.log(color(`Execution time: ${result.timeMs} ms`, 'gray'));
+      console.log(`\n${gray('Execution time: ' + result.timeMs + ' ms')}`);
     }
+    // Message to rerun script
+    console.log(gray('Press [R] to run the script again (No build/upload)'));
     return result;
   } catch (err) {
     console.error(`Failed to run script ${scriptCode}:`, err.response?.data || err.message);

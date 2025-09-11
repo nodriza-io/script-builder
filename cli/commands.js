@@ -7,6 +7,7 @@ const { bundleScript } = require('./bundle');
 
 // Runs the script in the specified environment and watches code.js for changes
 async function runDevScript(scriptName, env, domain, run = false) {
+  const { listenScriptLog } = require('./socketLog');
   const scriptCode = `${scriptName}-${env}`;
   const apiKey = config.get('apiKey', domain);
   const configPath = require('path').join(process.cwd(), 'accounts', domain, 'config.json');
@@ -86,8 +87,31 @@ async function runDevScript(scriptName, env, domain, run = false) {
     await apiClient.patchScript(domain, apiKey, scriptCode, { repositoryUrl: gitRepositoryUrl }, 'git');
   }
   if (run) {
-    await apiClient.runScript(domain, apiKey, scriptCode);
+    // Connect to socket.io and listen for script logs, but only run after socket is connected
+    await new Promise((resolve) => {
+      listenScriptLog(domain, scriptName, env, apiKey, () => {
+        apiClient.runScript(domain, apiKey, scriptCode).then(resolve);
+      });
+    });
 
+    // Listen for 'R' key to run the script again (without build/upload)
+    if (process.stdin.isTTY) {
+      process.stdin.setRawMode(true);
+      process.stdin.resume();
+      process.stdin.setEncoding('utf8');
+      process.stdin.on('data', async (key) => {
+        if (key.toLowerCase() === 'r') {
+          const chalk = (await import('chalk')).default;
+          const gray = (str) => chalk ? chalk.gray(str) : str;
+          await apiClient.runScript(domain, apiKey, scriptCode);
+        }
+        // Allow exit with Ctrl+C
+        if (key === '\u0003') {
+          process.exit();
+        }
+      });
+    }
+  }
     // Watch code.js and lib/
     const libPath = path.join(scriptFolder, 'lib');
     const chokidar = require('chokidar');
@@ -98,7 +122,9 @@ async function runDevScript(scriptName, env, domain, run = false) {
       awaitWriteFinish: true,
     });
     const triggerBundle = async (event, filePath) => {
-      console.log(`[WATCH] ${event} detected in ${filePath}. Bundling and uploading...`);
+  // Clear the console on every file change/add/unlink
+  process.stdout.write('\x1Bc');
+  console.log(`[WATCH] ${event} detected in ${filePath}. Bundling and uploading...`);
       try {
         await bundleScript(codePath, distPath);
         const bundledCode = fs.readFileSync(distPath, 'utf8');
@@ -143,7 +169,8 @@ async function runDevScript(scriptName, env, domain, run = false) {
         }
       });
     }
-  } else {
+  // If not in run mode, exit after setup
+  if (!run) {
     process.exit(0);
   }
 }
