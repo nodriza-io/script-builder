@@ -1,9 +1,4 @@
 #!/bin/bash
 
 # CLI wrapper for script-builder
-if [ "$#" -lt 3 ]; then
-  echo "Usage: ./script <dev|prod|create> <domain> <scriptName>"
-  exit 1
-fi
-
 node index.js "$@"

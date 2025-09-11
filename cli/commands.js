@@ -22,6 +22,9 @@ async function runDevScript(scriptName, env, domain, run = false) {
   }
   const codePath = config.getScriptCodePath(domain, scriptName);
   const scriptFolder = path.dirname(codePath);
+  if (!fs.existsSync(scriptFolder)) {
+    fs.mkdirSync(scriptFolder, { recursive: true });
+  }
   const distPath = path.join(scriptFolder, 'dist', 'bundle.js');
   const variablesPath = codePath.replace('code.js', 'variables.json');
   const payloadPath = codePath.replace('code.js', 'payload.json');

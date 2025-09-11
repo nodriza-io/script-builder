@@ -1,40 +1,107 @@
 #!/usr/bin/env node
 
+
 const { runPrompts } = require('./cli/prompts');
 const { runDevScript, createScript, minifyScript } = require('./cli/commands');
+const { parseFlags } = require('./cli/flags');
 
-
-
-const args = process.argv.slice(2);
+const argv = process.argv;
+const flags = parseFlags(argv);
+const args = argv.slice(2);
 const command = args[0];
-const domain = args[1];
-const scriptName = args[2];
-const runFlag = args[3] === 'run';
+const runFlag = args.includes('run');
+
 
 
 
 (async () => {
-  if ((command === 'dev' || command === 'prod') && domain && scriptName) {
-    await runPrompts(command, scriptName, domain);
-  await runDevScript(scriptName, command, domain, runFlag);
-  } else if (command === 'create' && domain && scriptName) {
-    // Prompt for gitRepo first
+  if (!command) {
+    // No command: show help
+    console.log('Usage: ./script <dev|prod|create|import> [options]');
+    console.log('Commands:');
+    console.log('  create   Create a new script (interactive or one-liner)');
+    console.log('  dev      Run script in dev mode');
+    console.log('  prod     Run script in prod mode');
+    console.log('  import   Import script from git repo');
+    console.log('Options for create:');
+    console.log('  --domain <domain>');
+    console.log('  --scriptCode <scriptCode>');
+    console.log('  --repo <gitRepo>');
+    console.log('  --lifecycleHooks <hooks>');
+    console.log('  --apikey <apiKey>');
+    return;
+  }
+
+  if (command === 'dev' || command === 'prod') {
     const inquirer = await import('inquirer');
-    const { gitRepo } = await inquirer.default.prompt({
-      type: 'input',
-      name: 'gitRepo',
-      message: 'Enter the git repository URL to clone:',
-      validate: input => input ? true : 'Git repository URL is required.'
-    });
-    if (!gitRepo) {
-      console.log('Git repository URL is required.');
-      process.exit(1);
+    let domain = flags.domain;
+    let scriptCode = flags.scriptCode;
+    let runFlag = (typeof flags.run !== 'undefined') ? true : args.includes('run');
+
+    // Interactive prompts for missing values
+    if (!domain) {
+      const response = await inquirer.default.prompt({
+        type: 'input',
+        name: 'domain',
+        message: 'Enter domain:',
+        validate: input => input ? true : 'Domain is required.'
+      });
+      domain = response.domain;
     }
-    // Clone the git repository
+    if (!scriptCode) {
+      const response = await inquirer.default.prompt({
+        type: 'input',
+        name: 'scriptCode',
+        message: 'Enter script code:',
+        validate: input => input ? true : 'Script code is required.'
+      });
+      scriptCode = response.scriptCode;
+    }
+    // Only prompt for runFlag if neither flag nor arg is present
+    // But if neither is present, just build/publish and exit (no prompt)
+    await runPrompts(command, scriptCode, domain);
+    await runDevScript(scriptCode, command, domain, runFlag);
+    return;
+  }
+
+  if (command === 'import') {
+    const inquirer = await import('inquirer');
+    let domain = flags.domain;
+    let scriptCode = flags.scriptCode;
+    let gitRepo = flags.repo;
+
+    if (!domain) {
+      const response = await inquirer.default.prompt({
+        type: 'input',
+        name: 'domain',
+        message: 'Enter domain:',
+        validate: input => input ? true : 'Domain is required.'
+      });
+      domain = response.domain;
+    }
+    if (!scriptCode) {
+      const response = await inquirer.default.prompt({
+        type: 'input',
+        name: 'scriptCode',
+        message: 'Enter script code:',
+        validate: input => input ? true : 'Script code is required.'
+      });
+      scriptCode = response.scriptCode;
+    }
+    if (!gitRepo) {
+      const response = await inquirer.default.prompt({
+        type: 'input',
+        name: 'gitRepo',
+        message: 'Enter the git repository URL to import:',
+        validate: input => input ? true : 'Git repository URL is required.'
+      });
+      gitRepo = response.gitRepo;
+    }
+    // Import logic (clone repo only)
     const fs = require('fs');
     const { execSync } = require('child_process');
     const path = require('path');
-    const repoDir = path.join(process.cwd(), 'accounts', domain, scriptName);
+    const repoDir = path.join(process.cwd(), 'accounts', domain, scriptCode);
     if (fs.existsSync(repoDir) && fs.readdirSync(repoDir).length > 0) {
       const { confirmDelete } = await inquirer.default.prompt({
         type: 'confirm',
@@ -51,6 +118,114 @@ const runFlag = args[3] === 'run';
     }
     try {
       execSync(`git clone ${gitRepo} ${repoDir}`, { stdio: 'inherit' });
+      console.log(`[IMPORT] Repository imported to ${repoDir}`);
+    } catch (err) {
+      console.error(`[ERROR] Failed to import repository: ${err.message}`);
+      process.exit(1);
+    }
+    console.log('\nNext steps:');
+    console.log(`To start development, run:\n  ./script dev ${domain} ${scriptCode} run`);
+    console.log(`To start production, run:\n  ./script prod ${domain} ${scriptCode}`);
+    return;
+  }
+    const inquirer = await import('inquirer');
+  let domain = flags.domain;
+  let scriptCode = flags.scriptCode;
+  let repo = flags.repo;
+  let lifecycleHooks = flags.lifecycleHooks;
+  let apiKey = flags.apikey;
+
+    // Interactive mode if any required flag is missing
+    const fs = require('fs');
+    const path = require('path');
+    // 1. domain
+    if (!domain) {
+      const response = await inquirer.default.prompt({
+        type: 'input',
+        name: 'domain',
+        message: 'Enter domain:',
+        validate: input => input ? true : 'Domain is required.'
+      });
+      domain = response.domain;
+    }
+    // 2. apiKey (if not set for domain)
+    let configPath = path.join(process.cwd(), 'accounts', domain, 'config.json');
+    if (!apiKey) {
+      if (fs.existsSync(configPath)) {
+        try {
+          const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          apiKey = configData.apiKey;
+        } catch {}
+      }
+      if (!apiKey) {
+        const response = await inquirer.default.prompt({
+          type: 'input',
+          name: 'apiKey',
+          message: `Enter API key for domain '${domain}':`,
+          validate: input => input ? true : 'API key is required.'
+        });
+        apiKey = response.apiKey;
+        const domainDir = path.dirname(configPath);
+        if (!fs.existsSync(domainDir)) {
+          fs.mkdirSync(domainDir, { recursive: true });
+        }
+        fs.writeFileSync(configPath, JSON.stringify({ apiKey, domain, minifyProductionScripts: true }, null, 2));
+      }
+    }
+    // 3. scriptCode
+    if (!scriptCode) {
+      const response = await inquirer.default.prompt({
+        type: 'input',
+        name: 'scriptCode',
+        message: 'Enter script code:',
+        validate: input => input ? true : 'Script code is required.'
+      });
+      scriptCode = response.scriptCode;
+    }
+    // 4. repo
+    if (!repo) {
+      const response = await inquirer.default.prompt({
+        type: 'input',
+        name: 'repo',
+        message: 'Enter git repository URL:',
+        validate: input => input ? true : 'Git repository URL is required.'
+      });
+      repo = response.repo;
+    }
+    // 5. lifecycleHooks
+    if (!lifecycleHooks) {
+      const response = await inquirer.default.prompt({
+        type: 'input',
+        name: 'lifecycleHooks',
+        message: 'Add lifecycleHooks? (comma separated, e.g. Invoice,Contact)',
+        default: '',
+      });
+      lifecycleHooks = response.lifecycleHooks;
+    }
+    let hooksArr = [];
+    if (lifecycleHooks && lifecycleHooks.trim()) {
+      hooksArr = lifecycleHooks.split(',').map(h => h.trim()).filter(Boolean);
+    }
+
+    // Clone repo and copy templates
+    const { execSync } = require('child_process');
+    const repoDir = path.join(process.cwd(), 'accounts', domain, scriptCode);
+    if (fs.existsSync(repoDir) && fs.readdirSync(repoDir).length > 0) {
+      const { confirmDelete } = await inquirer.default.prompt({
+        type: 'confirm',
+        name: 'confirmDelete',
+        message: `The folder ${repoDir} already exists and is not empty. Delete it and continue?`,
+        default: false
+      });
+      if (!confirmDelete) {
+        console.log('Aborted by user.');
+        process.exit(1);
+      }
+      fs.rmSync(repoDir, { recursive: true, force: true });
+      console.log(`[CLEANUP] Deleted existing folder: ${repoDir}`);
+    }
+    try {
+      execSync(`git clone ${repo} ${repoDir}`, { stdio: 'inherit' });
       console.log(`[GIT] Repository cloned to ${repoDir}`);
       // Copy only lib, code.js, lifecycleHooks.json, payload.json, variables.json from templates
       const templateDir = path.join(process.cwd(), 'templates');
@@ -88,48 +263,17 @@ const runFlag = args[3] === 'run';
       console.error(`[ERROR] Failed to clone repository: ${err.message}`);
       process.exit(1);
     }
-    // Now prompt for apiKey only if not present in config.json
-    let apiKey;
-    try {
-      const configPath = path.join(process.cwd(), 'accounts', domain, 'config.json');
-      if (fs.existsSync(configPath)) {
-        const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        apiKey = configData.apiKey;
-      }
-    } catch {}
-    if (!apiKey) {
-      const response = await inquirer.default.prompt({
-        type: 'input',
-        name: 'apiKey',
-        message: `Enter API key for domain '${domain}':`,
-        validate: input => input ? true : 'API key is required.'
-      });
-      apiKey = response.apiKey;
-      // Save to config.json for future use, default minifyProductionScripts true
-      const configPath = path.join(process.cwd(), 'accounts', domain, 'config.json');
-      fs.writeFileSync(configPath, JSON.stringify({ apiKey, domain, minifyProductionScripts: true }, null, 2));
-    }
-    // Prompt for lifecycleHooks
-    const { lifecycleHooks } = await inquirer.default.prompt({
-      type: 'input',
-      name: 'lifecycleHooks',
-      message: 'Add lifecycleHooks? (comma separated, e.g. Invoice,Contact)',
-      default: '',
-    });
-    if (lifecycleHooks && lifecycleHooks.trim()) {
-      const hooksArr = lifecycleHooks.split(',').map(h => h.trim()).filter(Boolean);
+    // Write lifecycleHooks.json
+    if (hooksArr.length) {
       const hooksPath = path.join(repoDir, 'lifecycleHooks.json');
       fs.writeFileSync(hooksPath, JSON.stringify(hooksArr, null, 2));
       console.log(`[INFO] lifecycleHooks.json created: ${JSON.stringify(hooksArr)}`);
     }
-  // Pass git.repositoryUrl to createScript
-  await createScript(scriptName, 'dev', domain, gitRepo);
-  await createScript(scriptName, 'prod', domain, gitRepo);
-    console.log(`Scripts '${scriptName}-dev' and '${scriptName}-prod' created for domain '${domain}'.`);
+    // Pass git.repositoryUrl to createScript
+    await createScript(scriptCode, 'dev', domain, repo);
+    await createScript(scriptCode, 'prod', domain, repo);
+    console.log(`Scripts '${scriptCode}-dev' and '${scriptCode}-prod' created for domain '${domain}'.`);
     console.log('\nNext steps:');
-  console.log(`To start development, run:\n  ./script dev ${domain} ${scriptName} run`);
-    console.log(`To start production, run:\n  ./script prod ${domain} ${scriptName}`);
-  } else {
-  console.log('Usage: ./script <dev|prod|create> <domain> <scriptName> [run] [min]');
-  }
+    console.log(`To start development, run:\n  ./script dev ${domain} ${scriptCode} run`);
+    console.log(`To start production, run:\n  ./script prod ${domain} ${scriptCode}`);
 })();

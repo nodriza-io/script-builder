@@ -85,16 +85,16 @@ If you provide all flags, the CLI runs non-interactively:
 ```
 
 ### Run logic
-- If you provide `--run`, the CLI will run and watch the script after build/publish.
-- If you do NOT provide `--run`, it will only build and publish, then exit (no prompt).
-```
+* If you provide `--run`, the CLI will run and watch the script after build/publish.
+* While in `--run` mode, you can listen to real-time console logs from your script via socket connection (live output in your terminal).
+* If you do NOT provide `--run`, it will only build and publish, then exit (no prompt).
 
 ---
 
 ## Project Structure
 
-
 ```
+
 accounts/
 └── <domain>/
   └── <scriptName>/
@@ -113,6 +113,7 @@ lib/
 .gitignore
 build/
 README.md
+
 ```
 
 ## Importing libraries in your scripts
@@ -183,7 +184,6 @@ All domain config is stored in `accounts/<domain>/config.json`:
 {
   "apiKey": "...",           // Prolibu API key (required)
   "minifyProductionScripts": true, // Minify prod scripts (default: true)
-  "gitRepositoryUrl": "..." // Optional
 }
 ```
 
