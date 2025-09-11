@@ -38,16 +38,55 @@ cd script-builder
 npm install
 chmod +x script # optional
 
-# Create a new script
-./script create <domain> <scriptName>
+## Usage
 
-# Upload and exit (no watch)
-./script dev <domain> <scriptName>
-./script prod <domain> <scriptName>
+### Interactive mode
+If you run a command without flags, the CLI will prompt for missing values:
 
-# Live watch mode (sync on change)
-./script dev <domain> <scriptName> run
-./script prod <domain> <scriptName> run
+```bash
+./script create
+# Prompts for domain, API key, scriptCode, repo, lifecycleHooks
+
+./script dev
+# Prompts for domain, scriptCode
+
+./script prod
+# Prompts for domain, scriptCode
+
+./script import
+# Prompts for domain, scriptCode, repo
+```
+
+### One-liner mode (no prompts)
+If you provide all flags, the CLI runs non-interactively:
+
+```bash
+./script create \
+  --domain dev10.prolibu.com \
+  --scriptCode hook-sample \
+  --repo https://github.com/nodriza-io/hook-sample.git \
+  --lifecycleHooks "Invoice,Contact" \
+  --apikey <your-api-key>
+
+./script dev \
+  --domain dev10.prolibu.com \
+  --scriptCode hook-sample \
+  --run # Only runs and watches if --run is present
+
+./script prod \
+  --domain dev10.prolibu.com \
+  --scriptCode hook-sample \
+  --run
+
+./script import \
+  --domain dev10.prolibu.com \
+  --scriptCode hook-sample \
+  --repo https://github.com/nodriza-io/hook-sample.git
+```
+
+### Run logic
+- If you provide `--run`, the CLI will run and watch the script after build/publish.
+- If you do NOT provide `--run`, it will only build and publish, then exit (no prompt).
 ```
 
 ---
@@ -58,6 +97,33 @@ chmod +x script # optional
 accounts/
   └── <domain>/
     └── <scriptName>/
+lib/
+  └── utils/
+  └── vendors/
+  └── ...
+```
+
+## Importing libraries in your scripts
+
+You can import libraries in your scripts from:
+
+- **Local script lib folder** (relative to your script):
+  ```js
+  // Using require()
+  const sleep = require('./lib/utils/sleep');
+  const salesforce = require('./lib/vendors/salesforce');
+  ```
+
+- **Global project lib folder** (shared across all scripts):
+  ```js
+  // Using require()
+  const sleep = require('lib/utils/sleep');
+  const salesforce = require('lib/vendors/salesforce');
+  ```
+
+You can use either `require()` (recommended for compatibility) or `import` if your environment supports ES modules.
+
+This allows you to share utilities and vendor integrations across all scripts in the project, or keep script-specific logic in the local lib folder.
   ├── code.js
   ├── variables.json
   ├── payload.json
