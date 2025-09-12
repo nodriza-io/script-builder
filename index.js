@@ -148,30 +148,28 @@ const runFlag = args.includes('run');
       });
       domain = response.domain;
     }
-    // 2. apiKey (if not set for domain)
-    let configPath = path.join(process.cwd(), 'accounts', domain, 'config.json');
-    if (!apiKey) {
-      if (fs.existsSync(configPath)) {
-        try {
-          const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-          apiKey = configData.apiKey;
-        } catch {}
-      }
-      if (!apiKey) {
-        const response = await inquirer.default.prompt({
-          type: 'input',
-          name: 'apiKey',
-          message: `Enter API key for domain '${domain}':`,
-          validate: input => input ? true : 'API key is required.'
-        });
-        apiKey = response.apiKey;
-        const domainDir = path.dirname(configPath);
-        if (!fs.existsSync(domainDir)) {
-          fs.mkdirSync(domainDir, { recursive: true });
-        }
-        fs.writeFileSync(configPath, JSON.stringify({ apiKey, domain, minifyProductionScripts: true }, null, 2));
-      }
+    // 2. apiKey (always ensure config.json is created/updated)
+  let profilePath = path.join(process.cwd(), 'accounts', domain, 'profile.json');
+    if (fs.existsSync(profilePath)) {
+      try {
+        const profileData = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+        if (!apiKey) apiKey = profileData.apiKey;
+      } catch {}
     }
+    if (!apiKey) {
+      const response = await inquirer.default.prompt({
+        type: 'input',
+        name: 'apiKey',
+        message: `Enter API key for domain '${domain}':`,
+        validate: input => input ? true : 'API key is required.'
+      });
+      apiKey = response.apiKey;
+    }
+    const domainDir = path.dirname(profilePath);
+    if (!fs.existsSync(domainDir)) {
+      fs.mkdirSync(domainDir, { recursive: true });
+    }
+    fs.writeFileSync(profilePath, JSON.stringify({ apiKey }, null, 2));
     // 3. scriptCode
     if (!scriptCode) {
       const response = await inquirer.default.prompt({
@@ -227,13 +225,14 @@ const runFlag = args.includes('run');
     try {
       execSync(`git clone ${repo} ${repoDir}`, { stdio: 'inherit' });
       console.log(`[GIT] Repository cloned to ${repoDir}`);
-      // Copy only lib, code.js, lifecycleHooks.json, payload.json, variables.json from templates
+      // Copy only lib, code.js, lifecycleHooks.json, payload.json, variables.json, config.json from templates
       const templateDir = path.join(process.cwd(), 'templates');
       const filesToCopy = [
         'code.js',
         'lifecycleHooks.json',
         'payload.json',
-        'variables.json'
+        'variables.json',
+        'config.json'
       ];
       filesToCopy.forEach(file => {
         const src = path.join(templateDir, file);

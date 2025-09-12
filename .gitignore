@@ -1,3 +1,5 @@
+# Ignore test config
+test/config.json
 
 node_modules/
 accounts/

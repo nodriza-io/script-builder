@@ -9,14 +9,15 @@ Script Builder CLI is a modern, developer-focused framework for building, testin
 Key features:
 - Interactive script scaffolding (domain, API key, git repo, script code)
 - Git repo cloning and template-based initialization
-- Essential template file copying
-- Real-time file watching and API sync (with run)
+- Real-time file watching and API sync while in "run" mode
 - Bundling/minification for production (esbuild, per domain config)
 - Per-domain config (API keys, minification, git repo URL)
 - Automatic README.md sync to API
-- Modular code via lib/
+- Modular code via lib/ or load from global lib/
 - Dev/prod environment support
-- Secure API integration and code publishing
+- Live log streaming while in run mode
+- Error handling and debugging support
+- Comprehensive testing framework
 
 ---
 
@@ -26,6 +27,7 @@ Key features:
 - Node.js (v18 or higher recommended)
 - npm (to install dependencies)
 - A valid Prolibu API key for each domain
+- Git (for cloning repos)
 ---
 
 ## Installation
@@ -36,7 +38,8 @@ Key features:
 git clone https://github.com/nodriza-io/script-builder.git
 cd script-builder
 npm install
-chmod +x script # optional
+chmod +x script # To make the script executable
+```
 
 ## Usage
 
@@ -46,6 +49,16 @@ If you run a command without flags, the CLI will prompt for missing values:
 ```bash
 ./script create
 # Prompts for domain, API key, scriptCode, repo, lifecycleHooks
+
+# Domain: Use your Prolibu domain, e.g. my-company.prolibu.com
+
+# API key: Generate an API key from your Prolibu account, by clicking on your profile picture in the top right corner, selecting "Api Keys", and creating a new key with appropriate permissions.
+
+# ScriptCode: Enter a unique name for your script (e.g. "erp-integration").
+
+# Repo: Create a new repository and paste the repo URL here.
+
+# Lifecycle Hooks: Specify any lifecycle hooks you want to use (e.g. "Invoice,Contact").
 
 ./script dev
 # Prompts for domain, scriptCode
@@ -63,10 +76,10 @@ If you provide all flags, the CLI runs non-interactively:
 ```bash
 ./script create \
   --domain dev10.prolibu.com \
+  --apikey <your-api-key> \
   --scriptCode hook-sample \
   --repo https://github.com/nodriza-io/hook-sample.git \
-  --lifecycleHooks "Invoice,Contact" \
-  --apikey <your-api-key>
+  --lifecycleHooks "Invoice,Contact"
 
 ./script dev \
   --domain dev10.prolibu.com \
@@ -93,27 +106,55 @@ If you provide all flags, the CLI runs non-interactively:
 
 ## Project Structure
 
+
 ```
-
 accounts/
-└── <domain>/
-  └── <scriptName>/
-    ├── code.js
-    ├── variables.json
-    ├── payload.json
-    ├── lifecycleHooks.json
-    └── lib/
-      ├── utils/
-      ├── vendors/
-      └── config.json
+  └── <domain>/
+    ├── config.json
+    ├── <scriptName>/
+    │   ├── code.js
+    │   ├── variables.json
+    │   ├── payload.json
+    │   ├── lifecycleHooks.json
+    │   ├── lib/
+    │   │   └── Utils.js
+    │   └── README.md
+    ├── suite-hooks/
+    │   └── .gitignore
 lib/
-├── utils/
-├── vendors/
-└── ...
+  └── utils/
+    └── sleep.js
+cli/
+  ├── bundle.js
+  ├── commands.js
+  ├── cookieUtil.js
+  ├── flags.js
+  ├── prompts.js
+  └── socketLog.js
+config/
+  └── config.js
+api/
+  └── client.js
+templates/
+  ├── .gitignore
+  ├── code.js
+  ├── variables.json
+  ├── payload.json
+  ├── lifecycleHooks.json
+  └── lib/
+      └── Utils.js
+test/
+  ├── commands.test.js
+  ├── config.json # Clone the config.json.template and fill in with test domain and API key
+  └── config.json.template
 .gitignore
-build/
 README.md
-
+index.js
+package.json
+package-lock.json
+script
+node_modules/
+build/
 ```
 
 ## Importing libraries in your scripts
@@ -134,47 +175,7 @@ You can import libraries in your scripts from:
   const salesforce = require('lib/vendors/salesforce');
   ```
 
-You can use either `require()` (recommended for compatibility) or `import` if your environment supports ES modules.
-
-
 This allows you to share utilities and vendor integrations across all scripts in the project, or keep script-specific logic in the local lib folder.
-
-```
-<script-folder>/
-├── code.js
-├── variables.json
-├── payload.json
-├── lifecycleHooks.json
-└── lib/
-  └── config.json
-.gitignore
-build/
-README.md
-```
-
----
-
-## Quick Start
-
-```bash
-# Clone and install
-git clone https://github.com/nodriza-io/script-builder.git
-cd script-builder
-npm install
-
-# Create and deploy a script
-./script create {prolibu-domain} myScript
-./script dev {prolibu-domain} myScript
-./script prod {prolibu-domain} myScript
-```
-
----
-
-## CLI Commands
-
-See Quick Start above for main commands.
-
----
 
 ## Configuration Reference
 
@@ -186,18 +187,6 @@ All domain config is stored in `accounts/<domain>/config.json`:
   "minifyProductionScripts": true, // Minify prod scripts (default: true)
 }
 ```
-
----
-
-## Troubleshooting
-
-Common issues:
-- API key errors: Ensure your API key is valid and present in the config file.
-- Permission denied: Run `chmod +x script` if you see permission errors.
-- Bundling failures: Check Node.js version and esbuild installation.
-- File not syncing: Use run/watch mode for live updates.
-
-
 ---
 
 ## API Integration
@@ -208,5 +197,5 @@ See Configuration Reference above for config details.
 API endpoints:
 - PATCH `/v2/script/{scriptCode}`: Update code, variables, payload, hooks, etc.
 - POST `/v2/run`: Run script
-- GET `/v2/run/{runId}`: Check run status/logs
+- GET `/v2/run/{runId}`
 Auth: `Authorization: Bearer <PROLIBU_TOKEN>`

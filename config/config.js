@@ -1,33 +1,33 @@
 const fs = require('fs');
 const path = require('path');
 
-function getConfigPath(domain) {
-  return path.join(process.cwd(), 'accounts', domain, 'config.json');
+function getProfilePath(domain) {
+  return path.join(process.cwd(), 'accounts', domain, 'profile.json');
 }
 
 function ensureConfig(domain) {
-  const configPath = getConfigPath(domain);
-  if (!fs.existsSync(configPath)) {
-    fs.mkdirSync(path.dirname(configPath), { recursive: true });
-    fs.writeFileSync(configPath, JSON.stringify({ apiKey: '', domain }, null, 2));
+  const profilePath = getProfilePath(domain);
+  if (!fs.existsSync(profilePath)) {
+    fs.mkdirSync(path.dirname(profilePath), { recursive: true });
+    fs.writeFileSync(profilePath, JSON.stringify({ apiKey: '' }, null, 2));
   }
 }
 
 function get(key, domain) {
-  const configPath = getConfigPath(domain);
-  if (!fs.existsSync(configPath)) return undefined;
-  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-  return config[key];
+  const profilePath = getProfilePath(domain);
+  if (!fs.existsSync(profilePath)) return undefined;
+  const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+  return profile[key];
 }
 
 function set(key, value, domain) {
-  const configPath = getConfigPath(domain);
+  const profilePath = getProfilePath(domain);
   ensureConfig(domain);
-  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-  config[key] = value;
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+  profile[key] = value;
+  fs.writeFileSync(profilePath, JSON.stringify(profile, null, 2));
   if (key === 'apiKey') {
-    console.log(`[DEBUG] apiKey for domain '${domain}' saved to ${configPath}`);
+    console.log(`[DEBUG] apiKey for domain '${domain}' saved to ${profilePath}`);
   }
 }
 
@@ -58,7 +58,7 @@ function writeScriptCode(domain, scriptName, code) {
 module.exports = {
   get,
   set,
-  getConfigPath,
+  getProfilePath,
   ensureConfig,
   getScriptCodePath,
   ensureScriptCode,

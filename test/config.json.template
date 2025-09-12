@@ -1,0 +1,5 @@
+{
+  "domain": "example.prolibu.com",
+  "repo": "<your-repo-url>",
+  "apiKey": "<your-api-key>"
+}
