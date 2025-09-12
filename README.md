@@ -176,7 +176,6 @@ You can import libraries in your scripts from:
 
 This allows you to share utilities and vendor integrations across all scripts in the project, or keep script-specific logic in the local lib folder.
 
-```
 
 ## API Contract (summary)
 API endpoints:
@@ -200,17 +199,15 @@ Tests are located in the `/test` folder, mainly in `commands.test.js`.
 ## How to run the tests?
 Run the following command from the project root:
 
-```bash
+```
 npm test
 ```
 
 This will execute all tests and display results in the console.
 
-## Automatic cleanup
+## Cleanup
 Before each test, generated files and folders are removed to ensure a clean and reproducible environment.
+Important: Scripts created during tests are not deleted from the Prolibu platform, should be deleted manually.
 
 ## Required dependencies
 - Jest (already included in devDependencies)
-
-## Notes
-You can add more tests in the `/test` folder to cover new cases or features.
