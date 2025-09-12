@@ -103,55 +103,57 @@ If you provide all flags, the CLI runs non-interactively:
 
 ## Project Structure
 
-
 ```
 accounts/
   └── <domain>/
-    ├── config.json
-    ├── <scriptName>/
-    │   ├── code.js
-    │   ├── variables.json
-    │   ├── payload.json
-    │   ├── lifecycleHooks.json
-    │   ├── lib/
-    │   │   └── Utils.js
-    │   └── README.md
-    ├── suite-hooks/
-    │   └── .gitignore
+    ├── profile.json         # Domain-level config (apiKey)
+    ├── <scriptName>/        # Script folder
+    │   ├── code.js          # Main script code
+    │   ├── variables.json   # Variables for the script
+    │   ├── payload.json     # Payload data for the script
+    │   ├── lifecycleHooks.json # Lifecycle hooks configuration
+    │   ├── config.json      # Script-level config (e.g., minifyProductionScripts)
+    │   ├── lib/             # Local script utilities
+    │   │   └── Utils.js     # Example utility
+    │   └── README.md        # Script documentation
+    ├── suite-hooks/         # Suite-level hooks folder
+    │   └── .gitignore       # Ignore files for suite-hooks
 lib/
   └── utils/
-    └── sleep.js
+    └── sleep.js             # Shared utility for sleep
 cli/
-  ├── bundle.js
-  ├── commands.js
-  ├── cookieUtil.js
-  ├── flags.js
-  ├── prompts.js
-  └── socketLog.js
+  ├── bundle.js              # Bundling logic (esbuild)
+  ├── commands.js            # CLI command handlers
+  ├── cookieUtil.js          # Cookie utilities
+  ├── flags.js               # CLI flag parsing
+  ├── prompts.js             # Interactive CLI prompts
+  └── socketLog.js           # Real-time log streaming
 config/
-  └── config.js
+  └── config.js              # Config management logic
 api/
-  └── client.js
+  └── client.js              # API client for Prolibu
 templates/
-  ├── .gitignore
-  ├── code.js
-  ├── variables.json
-  ├── payload.json
-  ├── lifecycleHooks.json
+  ├── .gitignore             # Template for .gitignore
+  ├── code.js                # Template for code.js
+  ├── variables.json         # Template for variables.json
+  ├── payload.json           # Template for payload.json
+  ├── lifecycleHooks.json    # Template for lifecycleHooks.json
   └── lib/
-      └── Utils.js
-test/
-  ├── commands.test.js
-  ├── config.json # Clone the config.json.template and fill in with test domain and API key
-  └── config.json.template
-.gitignore
-README.md
-index.js
-package.json
-package-lock.json
-script
-node_modules/
-build/
+      └── Utils.js           # Template utility
+  └── config.json            # Template for script-level config
+  
+ test/
+  ├── commands.test.js       # Jest tests for CLI and script creation
+  ├── config.json            # Test config (domain, apiKey)
+  └── config.json.template   # Template for test config
+.gitignore                   # Ignore files for git
+README.md                    # Project documentation
+index.js                     # Main CLI entrypoint
+package.json                 # Project metadata and dependencies
+package-lock.json            # Dependency lock file
+script                       # CLI executable
+node_modules/                # Installed dependencies
+build/                       # Build artifacts
 ```
 
 ## Importing libraries in your scripts
@@ -174,17 +176,7 @@ You can import libraries in your scripts from:
 
 This allows you to share utilities and vendor integrations across all scripts in the project, or keep script-specific logic in the local lib folder.
 
-## Configuration Reference
-
-All domain config is stored in `accounts/<domain>/config.json`:
-
-```json
-{
-  "apiKey": "...",           // Prolibu API key (required)
-  "minifyProductionScripts": true, // Minify prod scripts (default: true)
-}
 ```
----
 
 ## API Contract (summary)
 API endpoints:
