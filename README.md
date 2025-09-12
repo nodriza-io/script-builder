@@ -1,4 +1,3 @@
-
 # Script Builder CLI
 
 
@@ -189,13 +188,39 @@ All domain config is stored in `accounts/<domain>/config.json`:
 ```
 ---
 
-## API Integration
-See Configuration Reference above for config details.
-```
-
 ## API Contract (summary)
 API endpoints:
 - PATCH `/v2/script/{scriptCode}`: Update code, variables, payload, hooks, etc.
 - POST `/v2/run`: Run script
 - GET `/v2/run/{runId}`
 Auth: `Authorization: Bearer <PROLIBU_TOKEN>`
+
+# Test System
+
+This project uses **Jest** for automated testing of CLI commands and generated script structure.
+
+## What do the tests cover?
+- Script creation and template file generation
+- Validation of `profile.json` and `config.json` configuration
+- Execution of CLI commands (`create`, `dev`, etc.) and error handling
+
+## Where are the tests?
+Tests are located in the `/test` folder, mainly in `commands.test.js`.
+
+## How to run the tests?
+Run the following command from the project root:
+
+```bash
+npm test
+```
+
+This will execute all tests and display results in the console.
+
+## Automatic cleanup
+Before each test, generated files and folders are removed to ensure a clean and reproducible environment.
+
+## Required dependencies
+- Jest (already included in devDependencies)
+
+## Notes
+You can add more tests in the `/test` folder to cover new cases or features.
