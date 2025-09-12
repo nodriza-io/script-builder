@@ -99,6 +99,18 @@ If you provide all flags, the CLI runs non-interactively:
 * While in `--run` mode, you can listen to real-time console logs from your script via socket connection (live output in your terminal).
 * If you do NOT provide `--run`, it will only build and publish, then exit (no prompt).
 
+### Real-time log streaming
+
+When you run a script in development mode with the `--run` flag (e.g., `./script dev --domain <domain> --scriptCode <scriptName> --run`), Script Builder CLI establishes a real-time connection to the Prolibu platform vis socket.io to stream console logs directly to your terminal.
+
+- **Live Output:** Console logs from your script are streamed directly to your terminal as the script executes, allowing you to monitor behavior and debug in real time.
+- **Automatic Reconnection:** If the connection drops, the CLI will attempt to reconnect automatically.
+- **Log Filtering:** Only logs from the current script and environment are displayed, so you see relevant output.
+- **Manual Trigger:** You can trigger a script run by pressing `R` in the terminal while in dev mode (if your terminal supports raw input).
+- **Error Reporting:** Any errors or exceptions thrown by your script are also streamed and displayed instantly.
+
+This system helps you iterate quickly, catch issues early, and understand script behavior as you develop.
+
 ---
 
 ## Project Structure
