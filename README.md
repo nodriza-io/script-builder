@@ -49,14 +49,12 @@ If you run a command without flags, the CLI will prompt for missing values:
 ./script create
 # Prompts for domain, API key, scriptCode, repo, lifecycleHooks
 
+# Prompts explained:
+
 # Domain: Use your Prolibu domain, e.g. my-company.prolibu.com
-
 # API key: Generate an API key from your Prolibu account, by clicking on your profile picture in the top right corner, selecting "Api Keys", and creating a new key with appropriate permissions.
-
 # ScriptCode: Enter a unique name for your script (e.g. "erp-integration").
-
 # Repo: Create a new repository and paste the repo URL here.
-
 # Lifecycle Hooks: Specify any lifecycle hooks you want to use (e.g. "Invoice,Contact").
 
 ./script dev
