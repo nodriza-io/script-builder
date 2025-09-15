@@ -92,6 +92,108 @@ describe('Script Builder CLI Commands', () => {
       }
       expect(devError).toBeNull();
     });
+
+    it('should check all have been uploaded after dev command', () => {
+      const axios = require('axios');
+      const apiKey = config.apiKey;
+      const domain = config.domain;
+      const scriptName = scriptCode;
+      const scriptCodeRemote = `${scriptName}-dev`;
+      const baseUrl = `https://${domain}/v2/script/${scriptCodeRemote}`;
+      const headers = { Authorization: `Bearer ${apiKey}` };
+
+      return axios.get(baseUrl, { headers }).then(response => {
+        const remote = response.data;
+        // check for code 200
+        expect(response.status).toBe(200);
+        
+        expect(remote.variables.length).toBe(1);
+        expect(remote.variables[0]).toHaveProperty('key', 'foo');
+        expect(remote.variables[0]).toHaveProperty('value', 'bar');
+        
+        expect(remote).toHaveProperty('code');
+        // Compare remote.code agains dist/bundle.js length
+        const distPath = path.join(scriptFolder, 'dist', 'bundle.js');
+        expect(fs.existsSync(distPath)).toBe(true);
+        const localCode = fs.readFileSync(distPath, 'utf8');
+        expect(remote.code.length).toBe(localCode.length);
+        
+        expect(remote).toHaveProperty('readme');
+        const localReadme = fs.readFileSync(path.join(scriptFolder, 'README.md'), 'utf8');
+        expect(remote.readme).toBe(localReadme);
+        
+        expect(remote).toHaveProperty('lifecycleHooks');
+        expect(remote.lifecycleHooks).toEqual(expect.arrayContaining(["Invoice", "Contact"]));
+        
+        expect(remote).toHaveProperty('active', true);
+
+        expect(remote).toHaveProperty('scriptCode', scriptCodeRemote);
+
+        expect(remote.git).toHaveProperty('repositoryUrl', config.repo);
+      });
+    });
+
+    it('should run the script', () => {
+      const axios = require('axios');
+      const apiKey = config.apiKey;
+      const domain = config.domain;
+      const scriptName = scriptCode;
+      const scriptCodeRemote = `${scriptName}-dev`;
+      const baseUrl = `https://${domain}/v2/script/run`;
+      const headers = { Authorization: `Bearer ${apiKey}` };
+      const params = { scriptId: scriptCodeRemote, test: 123 };
+
+      return axios.get(baseUrl, { headers, params }).then(response => {
+        const remote = response.data;
+
+        // check for code 200
+        expect(response.status).toBe(200);
+        expect(remote).toHaveProperty('output');
+        expect(remote).toHaveProperty('input');
+        expect(remote.input).toHaveProperty('test');
+        expect(remote).toHaveProperty('error', null);
+      });
+    });
+
+    it('should update code.js with console.log and publish with dev', () => {
+      const newCode = `console.log('hola mundo!');\nmodule.exports = async function() { return 'changed!'; }`;
+      fs.writeFileSync(path.join(scriptFolder, 'code.js'), newCode);
+      let devError = null;
+      const cmd = `./script dev --domain ${config.domain} --scriptCode ${scriptCode}`;
+      try {
+        execSync(cmd, { stdio: 'inherit' });
+      } catch (e) {
+        devError = e;
+      }
+      expect(devError).toBeNull();
+    });
+
+    it('should check all code has been uploaded after dev command', () => {
+      const axios = require('axios');
+      const apiKey = config.apiKey;
+      const domain = config.domain;
+      const scriptName = scriptCode;
+      const scriptCodeRemote = `${scriptName}-dev`;
+      const baseUrl = `https://${domain}/v2/script/${scriptCodeRemote}`;
+      const headers = { Authorization: `Bearer ${apiKey}` };
+
+      return axios.get(baseUrl, { headers }).then(response => {
+        const remote = response.data;
+        // check for code 200
+        expect(response.status).toBe(200);
+        
+        expect(remote).toHaveProperty('code');
+        // Compare remote.code agains dist/bundle.js length
+        const distPath = path.join(scriptFolder, 'dist', 'bundle.js');
+        expect(fs.existsSync(distPath)).toBe(true);
+        const localCode = fs.readFileSync(distPath, 'utf8');
+        expect(remote.code.length).toBe(localCode.length);
+        expect(remote.code).toContain('hola mundo!');
+      });
+
+    });
+
+    
   });
 });
 

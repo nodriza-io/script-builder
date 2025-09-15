@@ -10,7 +10,7 @@ async function runDevScript(scriptName, env, domain, run = false) {
   const { listenScriptLog } = require('./socketLog');
   const scriptCode = `${scriptName}-${env}`;
   const apiKey = config.get('apiKey', domain);
-  const configPath = require('path').join(process.cwd(), 'accounts', domain, 'config.json');
+  const configPath = require('path').join(process.cwd(), 'accounts', domain, scriptName, 'config.json');
   let minifyProductionScripts = false;
   let gitRepositoryUrl = '';
   if (require('fs').existsSync(configPath)) {
@@ -38,13 +38,13 @@ async function runDevScript(scriptName, env, domain, run = false) {
   if (fs.existsSync(readmePath)) {
     const readmeContent = fs.readFileSync(readmePath, 'utf8');
     await apiClient.patchScript(domain, apiKey, scriptCode, readmeContent, 'readme');
-    console.log(`README.md for '${scriptCode}' uploaded to script.readme (initial sync).`);
+  console.log(`[UPLOAD] README.md for '${scriptCode}' uploaded to script.readme (initial sync).`);
   }
   fs.watchFile(readmePath, { interval: 500 }, async (curr, prev) => {
     if (curr.mtime !== prev.mtime) {
       const readmeContent = fs.readFileSync(readmePath, 'utf8');
       await apiClient.patchScript(domain, apiKey, scriptCode, readmeContent, 'readme');
-      console.log(`README.md for '${scriptCode}' uploaded to script.readme.`);
+  console.log(`[UPLOAD] README.md for '${scriptCode}' uploaded to script.readme.`);
     }
   });
 
@@ -69,6 +69,7 @@ async function runDevScript(scriptName, env, domain, run = false) {
       format: 'cjs',
     });
     bundledCode = require('fs').readFileSync(minPath, 'utf8');
+    console.log(`[MINIFY] Production build: minify enabled in config.json, script was minified.`);
   } else {
     await bundleScript(codePath, distPath);
     bundledCode = require('fs').readFileSync(distPath, 'utf8');

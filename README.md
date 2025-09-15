@@ -223,3 +223,6 @@ Important: Scripts created during tests are not deleted from the Prolibu platfor
 
 ## Required dependencies
 - Jest (already included in devDependencies)
+
+# Pending for documentation
+- explain how lifecycle events are managed
