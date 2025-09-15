@@ -78,7 +78,7 @@ describe('Script Builder CLI Commands', () => {
     });
   });
 
-  describe('dev Command', () => {
+  describe('Dev Command', () => {
     it('should execute dev command "no --run" without errors', () => {
       let devError = null;
       const cmd = `./script dev \
@@ -133,7 +133,7 @@ describe('Script Builder CLI Commands', () => {
       });
     });
 
-    it('should run the script', () => {
+    it('should run the script to check input', () => {
       const axios = require('axios');
       const apiKey = config.apiKey;
       const domain = config.domain;
@@ -156,8 +156,10 @@ describe('Script Builder CLI Commands', () => {
     });
 
     it('should update code.js with console.log and publish with dev', () => {
-      const newCode = `console.log('hola mundo!');\nmodule.exports = async function() { return 'changed!'; }`;
+      const newCode = `console.log('hola mundo!');output=1980;// comment`;
       fs.writeFileSync(path.join(scriptFolder, 'code.js'), newCode);
+      expect(fs.readFileSync(path.join(scriptFolder, 'code.js'), 'utf8')).toBe(newCode);
+
       let devError = null;
       const cmd = `./script dev --domain ${config.domain} --scriptCode ${scriptCode}`;
       try {
@@ -193,7 +195,80 @@ describe('Script Builder CLI Commands', () => {
 
     });
 
-    
+    it('should update payload.json', () => {
+      const newPayload = {
+        my: 'house'
+      };
+      fs.writeFileSync(path.join(scriptFolder, 'payload.json'), JSON.stringify(newPayload, null, 2));
+      expect(fs.readFileSync(path.join(scriptFolder, 'payload.json'), 'utf8')).toBe(JSON.stringify(newPayload, null, 2));
+
+      let devError = null;
+      const cmd = `./script dev --domain ${config.domain} --scriptCode ${scriptCode}`;
+      try {
+        execSync(cmd, { stdio: 'inherit' });
+      } catch (e) {
+        devError = e;
+      }
+      expect(devError).toBeNull();
+    });
+
+    it('should run the script to check the payload', () => {
+      const axios = require('axios');
+      const apiKey = config.apiKey;
+      const domain = config.domain;
+      const scriptName = scriptCode;
+      const scriptCodeRemote = `${scriptName}-dev`;
+      const baseUrl = `https://${domain}/v2/script/run`;
+      const headers = { Authorization: `Bearer ${apiKey}` };
+      const params = { scriptId: scriptCodeRemote };
+
+      return axios.get(baseUrl, { headers, params }).then(response => {
+        const remote = response.data;
+
+        // console.log('___remote payload', JSON.stringify(remote, null, 2));
+
+        // check for code 200
+        expect(response.status).toBe(200);
+        expect(remote).toHaveProperty('output');
+        expect(remote.output).toBe(1980);
+        expect(remote).toHaveProperty('input');
+        expect(remote.input.payload).toHaveProperty('my', 'house');
+        expect(remote).toHaveProperty('error', null);
+      });
+    });
+  });
+
+  describe('Prod Command', () => {
+    it('should execute prod command "no --run" without errors', () => {
+      let prodError = null;
+      const cmd = `./script prod \
+        --domain ${config.domain} \
+        --scriptCode ${scriptCode}`;
+        
+      try {
+        execSync(cmd, { stdio: 'inherit' });
+      } catch (e) {
+        prodError = e;
+      }
+      expect(prodError).toBeNull();
+    });
+
+    it('should check all code has been uploaded after prod command', () => {
+      const axios = require('axios');
+      const apiKey = config.apiKey;
+      const domain = config.domain;
+      const scriptName = scriptCode;
+      const scriptCodeRemote = `${scriptName}-prod`;
+      const baseUrl = `https://${domain}/v2/script/${scriptCodeRemote}`;
+      const headers = { Authorization: `Bearer ${apiKey}` };
+
+      return axios.get(baseUrl, { headers }).then(response => {
+        const remote = response.data;
+        expect(response.status).toBe(200);
+        
+        expect(remote).toHaveProperty('code');
+        expect(remote.code).not.toContain('comment');
+      });
+    });
   });
 });
-
