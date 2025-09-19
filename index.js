@@ -32,6 +32,72 @@ const runFlag = args.includes('run');
     return;
   }
 
+  if (command === 'test') {
+    const inquirer = await import('inquirer');
+    let domain = flags.domain;
+    let scriptCode = flags.scriptCode;
+    const watchFlag = typeof flags.watch !== 'undefined' || args.includes('--watch');
+    // Interactive prompts for missing values
+    if (!domain) {
+      const response = await inquirer.default.prompt({
+        type: 'input',
+        name: 'domain',
+        message: 'Enter domain:',
+        validate: input => input ? true : 'Domain is required.'
+      });
+      domain = response.domain;
+    }
+    if (!scriptCode) {
+      const response = await inquirer.default.prompt({
+        type: 'input',
+        name: 'scriptCode',
+        message: 'Enter script code:',
+        validate: input => input ? true : 'Script code is required.'
+      });
+      scriptCode = response.scriptCode;
+    }
+    const path = require('path');
+    const fs = require('fs');
+    const testFile = path.join(process.cwd(), 'accounts', domain, scriptCode, 'test', 'index.test.js');
+    if (!fs.existsSync(testFile)) {
+      console.error(`[ERROR] Test file not found: ${testFile}`);
+      process.exit(1);
+    }
+    const { execSync } = require('child_process');
+    if (watchFlag) {
+      const chokidar = require('chokidar');
+      console.log(`[WATCH] Watching for changes in ${testFile}...`);
+      let running = false;
+      const runTest = () => {
+        if (running) return;
+        running = true;
+        try {
+          execSync(`DOMAIN=${domain} SCRIPT_CODE=${scriptCode} npx jest ${testFile}`, { stdio: 'inherit' });
+        } catch (err) {
+          console.error(`[ERROR] Test failed: ${err.message}`);
+        }
+        running = false;
+      };
+      runTest();
+      const watcher = chokidar.watch(testFile, { persistent: true });
+      watcher.on('change', () => {
+        console.clear();
+        console.log(`[WATCH] Change detected in ${testFile}. Rerunning tests...`);
+        runTest();
+      });
+      // Keep process alive
+      process.stdin.resume();
+      return;
+    } else {
+      try {
+        execSync(`DOMAIN=${domain} SCRIPT_CODE=${scriptCode} npx jest ${testFile}`, { stdio: 'inherit' });
+      } catch (err) {
+        console.error(`[ERROR] Test failed: ${err.message}`);
+        process.exit(1);
+      }
+      return;
+    }
+  }
   if (command === 'dev' || command === 'prod') {
     const inquirer = await import('inquirer');
     let domain = flags.domain;
@@ -123,9 +189,9 @@ const runFlag = args.includes('run');
       console.error(`[ERROR] Failed to import repository: ${err.message}`);
       process.exit(1);
     }
-    console.log('\nNext steps:');
-    console.log(`To start development, run:\n  ./script dev ${domain} ${scriptCode} run`);
-    console.log(`To start production, run:\n  ./script prod ${domain} ${scriptCode}`);
+  console.log('\nNext steps:');
+  console.log(`To start development, run:\n  ./script dev --domain ${domain} --scriptCode ${scriptCode} --run`);
+  console.log(`To start production, run:\n  ./script prod --domain ${domain} --scriptCode ${scriptCode} --run`);
     return;
   }
     const inquirer = await import('inquirer');
@@ -271,8 +337,8 @@ const runFlag = args.includes('run');
     // Pass git.repositoryUrl to createScript
     await createScript(scriptCode, 'dev', domain, repo);
     await createScript(scriptCode, 'prod', domain, repo);
-    console.log(`Scripts '${scriptCode}-dev' and '${scriptCode}-prod' created for domain '${domain}'.`);
-    console.log('\nNext steps:');
-    console.log(`To start development, run:\n  ./script dev ${domain} ${scriptCode} run`);
-    console.log(`To start production, run:\n  ./script prod ${domain} ${scriptCode}`);
+  console.log(`Scripts '${scriptCode}-dev' and '${scriptCode}-prod' created for domain '${domain}'.`);
+  console.log('\nNext steps:');
+  console.log(`To start development, run:\n  ./script dev --domain ${domain} --scriptCode ${scriptCode} --run`);
+  console.log(`To start production, run:\n  ./script prod --domain ${domain} --scriptCode ${scriptCode} --run`);
 })();
