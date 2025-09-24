@@ -17,18 +17,24 @@ const runFlag = args.includes('run');
 (async () => {
   if (!command) {
     // No command: show help
-    console.log('Usage: ./script <dev|prod|create|import> [options]');
+    console.log('Usage: ./script <dev|prod|create|import|test> [options]');
     console.log('Commands:');
     console.log('  create   Create a new script (interactive or one-liner)');
     console.log('  dev      Run script in dev mode');
     console.log('  prod     Run script in prod mode');
     console.log('  import   Import script from git repo');
+    console.log('  test     Run tests for a script');
     console.log('Options for create:');
     console.log('  --domain <domain>');
     console.log('  --scriptCode <scriptCode>');
     console.log('  --repo <gitRepo>');
     console.log('  --lifecycleHooks <hooks>');
     console.log('  --apikey <apiKey>');
+    console.log('Options for test:');
+    console.log('  --domain <domain>');
+    console.log('  --scriptCode <scriptCode>');
+    console.log('  --file <testFileName>    Test file name (default: index)');
+    console.log('  --watch                  Watch for changes and re-run tests');
     return;
   }
 
@@ -36,6 +42,7 @@ const runFlag = args.includes('run');
     const inquirer = await import('inquirer');
     let domain = flags.domain;
     let scriptCode = flags.scriptCode;
+    let testFileName = flags.file || 'index'; // Default to 'index' if no --file specified
     const watchFlag = typeof flags.watch !== 'undefined' || args.includes('--watch');
     // Interactive prompts for missing values
     if (!domain) {
@@ -58,7 +65,7 @@ const runFlag = args.includes('run');
     }
     const path = require('path');
     const fs = require('fs');
-    const testFile = path.join(process.cwd(), 'accounts', domain, scriptCode, 'test', 'index.test.js');
+    const testFile = path.join(process.cwd(), 'accounts', domain, scriptCode, 'test', `${testFileName}.test.js`);
     if (!fs.existsSync(testFile)) {
       console.error(`[ERROR] Test file not found: ${testFile}`);
       process.exit(1);
