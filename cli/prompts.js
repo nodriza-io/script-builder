@@ -1,6 +1,6 @@
 const config = require('../config/config');
 
-// Prompts for domain, apiKey, scriptCode, and scriptName
+// Prompts for domain, apiKey, and scriptName (prefix)
 async function runPrompts(env, scriptName, domain) {
   const inquirer = await import('inquirer');
   // Use provided domain, prompt only if missing

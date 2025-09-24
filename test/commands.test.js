@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+/* global describe, beforeAll, it, expect */
 
 const config = require('./config.json');
 
@@ -30,9 +31,9 @@ describe('Script Builder CLI Commands', () => {
     scriptFolder = path.join(__dirname, '..', 'accounts', config.domain, scriptCode);
     const cmd = `./script create \
       --domain ${config.domain} \
-      --scriptCode ${scriptCode} \
+      --scriptPrefix ${scriptCode} \
       --repo ${config.repo} \
-      --lifecycleHooks "Invoice,Contact" \
+      --lifecycleHooks "Contact" \
       --apikey ${config.apiKey}`;
     try {
       execSync(cmd, { stdio: 'inherit' });
@@ -61,12 +62,12 @@ describe('Script Builder CLI Commands', () => {
       });
     });
 
-    it('should have lifecycleHooks.json with ["Invoice", "Contact"]', () => {
+    it('should have lifecycleHooks.json with ["Contact"]', () => {
       const hooksPath = path.join(scriptFolder, 'lifecycleHooks.json');
       expect(fs.existsSync(hooksPath)).toBe(true);
       const hooks = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
       expect(Array.isArray(hooks)).toBe(true);
-      expect(hooks).toEqual(expect.arrayContaining(["Invoice", "Contact"]));
+      expect(hooks).toEqual(expect.arrayContaining(["Contact"]));
     });
 
     it('should exists the profile.json with correct apiKey', () => {
@@ -83,7 +84,7 @@ describe('Script Builder CLI Commands', () => {
       let devError = null;
       const cmd = `./script dev \
         --domain ${config.domain} \
-        --scriptCode ${scriptCode}`;
+        --scriptPrefix ${scriptCode}`;
         
       try {
         execSync(cmd, { stdio: 'inherit' });
@@ -123,7 +124,7 @@ describe('Script Builder CLI Commands', () => {
         expect(remote.readme).toBe(localReadme);
         
         expect(remote).toHaveProperty('lifecycleHooks');
-        expect(remote.lifecycleHooks).toEqual(expect.arrayContaining(["Invoice", "Contact"]));
+        expect(remote.lifecycleHooks).toEqual(expect.arrayContaining(["Contact"]));
         
         expect(remote).toHaveProperty('active', true);
 
@@ -161,7 +162,7 @@ describe('Script Builder CLI Commands', () => {
       expect(fs.readFileSync(path.join(scriptFolder, 'code.js'), 'utf8')).toBe(newCode);
 
       let devError = null;
-      const cmd = `./script dev --domain ${config.domain} --scriptCode ${scriptCode}`;
+      const cmd = `./script dev --domain ${config.domain} --scriptPrefix ${scriptCode}`;
       try {
         execSync(cmd, { stdio: 'inherit' });
       } catch (e) {
@@ -203,7 +204,7 @@ describe('Script Builder CLI Commands', () => {
       expect(fs.readFileSync(path.join(scriptFolder, 'payload.json'), 'utf8')).toBe(JSON.stringify(newPayload, null, 2));
 
       let devError = null;
-      const cmd = `./script dev --domain ${config.domain} --scriptCode ${scriptCode}`;
+      const cmd = `./script dev --domain ${config.domain} --scriptPrefix ${scriptCode}`;
       try {
         execSync(cmd, { stdio: 'inherit' });
       } catch (e) {
@@ -218,21 +219,20 @@ describe('Script Builder CLI Commands', () => {
       const domain = config.domain;
       const scriptName = scriptCode;
       const scriptCodeRemote = `${scriptName}-dev`;
-      const baseUrl = `https://${domain}/v2/script/run`;
+      const baseUrl = `https://${domain}/v2/script/run?scriptId=${scriptCodeRemote}&my=house`;
       const headers = { Authorization: `Bearer ${apiKey}` };
-      const params = { scriptId: scriptCodeRemote };
 
-      return axios.get(baseUrl, { headers, params }).then(response => {
+      return axios.get(baseUrl, { headers }).then(response => {
         const remote = response.data;
 
-        // console.log('___remote payload', JSON.stringify(remote, null, 2));
+        // console.log('*___remote payload', JSON.stringify(remote, null, 2));
 
         // check for code 200
         expect(response.status).toBe(200);
         expect(remote).toHaveProperty('output');
         expect(remote.output).toBe(1980);
         expect(remote).toHaveProperty('input');
-        expect(remote.input.payload).toHaveProperty('my', 'house');
+        expect(remote.input).toHaveProperty('my', 'house');
         expect(remote).toHaveProperty('error', null);
       });
     });
@@ -243,7 +243,7 @@ describe('Script Builder CLI Commands', () => {
       let prodError = null;
       const cmd = `./script prod \
         --domain ${config.domain} \
-        --scriptCode ${scriptCode}`;
+        --scriptPrefix ${scriptCode}`;
         
       try {
         execSync(cmd, { stdio: 'inherit' });

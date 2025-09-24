@@ -26,13 +26,13 @@ const runFlag = args.includes('run');
     console.log('  test     Run tests for a script');
     console.log('Options for create:');
     console.log('  --domain <domain>');
-    console.log('  --scriptCode <scriptCode>');
+    console.log('  --scriptPrefix <scriptPrefix>');
     console.log('  --repo <gitRepo>');
     console.log('  --lifecycleHooks <hooks>');
     console.log('  --apikey <apiKey>');
     console.log('Options for test:');
     console.log('  --domain <domain>');
-    console.log('  --scriptCode <scriptCode>');
+    console.log('  --scriptPrefix <scriptPrefix>');
     console.log('  --file <testFileName>    Test file name (default: index)');
     console.log('  --watch                  Watch for changes and re-run tests');
     return;
@@ -41,7 +41,7 @@ const runFlag = args.includes('run');
   if (command === 'test') {
     const inquirer = await import('inquirer');
     let domain = flags.domain;
-    let scriptCode = flags.scriptCode;
+    let scriptPrefix = flags.scriptPrefix;
     let testFileName = flags.file || 'index'; // Default to 'index' if no --file specified
     const watchFlag = typeof flags.watch !== 'undefined' || args.includes('--watch');
     // Interactive prompts for missing values
@@ -54,18 +54,18 @@ const runFlag = args.includes('run');
       });
       domain = response.domain;
     }
-    if (!scriptCode) {
+    if (!scriptPrefix) {
       const response = await inquirer.default.prompt({
         type: 'input',
-        name: 'scriptCode',
-        message: 'Enter script code:',
-        validate: input => input ? true : 'Script code is required.'
+        name: 'scriptPrefix',
+        message: 'Enter script prefix:',
+        validate: input => input ? true : 'Script prefix is required.'
       });
-      scriptCode = response.scriptCode;
+      scriptPrefix = response.scriptPrefix;
     }
     const path = require('path');
     const fs = require('fs');
-    const testFile = path.join(process.cwd(), 'accounts', domain, scriptCode, 'test', `${testFileName}.test.js`);
+    const testFile = path.join(process.cwd(), 'accounts', domain, scriptPrefix, 'test', `${testFileName}.test.js`);
     if (!fs.existsSync(testFile)) {
       console.error(`[ERROR] Test file not found: ${testFile}`);
       process.exit(1);
@@ -79,7 +79,7 @@ const runFlag = args.includes('run');
         if (running) return;
         running = true;
         try {
-          execSync(`DOMAIN=${domain} SCRIPT_CODE=${scriptCode} npx jest ${testFile}`, { stdio: 'inherit' });
+          execSync(`DOMAIN=${domain} SCRIPT_PREFIX=${scriptPrefix} npx jest ${testFile}`, { stdio: 'inherit' });
         } catch (err) {
           console.error(`[ERROR] Test failed: ${err.message}`);
         }
@@ -97,7 +97,7 @@ const runFlag = args.includes('run');
       return;
     } else {
       try {
-        execSync(`DOMAIN=${domain} SCRIPT_CODE=${scriptCode} npx jest ${testFile}`, { stdio: 'inherit' });
+        execSync(`DOMAIN=${domain} SCRIPT_PREFIX=${scriptPrefix} npx jest ${testFile}`, { stdio: 'inherit' });
       } catch (err) {
         console.error(`[ERROR] Test failed: ${err.message}`);
         process.exit(1);
@@ -108,7 +108,7 @@ const runFlag = args.includes('run');
   if (command === 'dev' || command === 'prod') {
     const inquirer = await import('inquirer');
     let domain = flags.domain;
-    let scriptCode = flags.scriptCode;
+    let scriptPrefix = flags.scriptPrefix;
     let runFlag = (typeof flags.run !== 'undefined') ? true : args.includes('run');
 
     // Interactive prompts for missing values
@@ -121,26 +121,26 @@ const runFlag = args.includes('run');
       });
       domain = response.domain;
     }
-    if (!scriptCode) {
+    if (!scriptPrefix) {
       const response = await inquirer.default.prompt({
         type: 'input',
-        name: 'scriptCode',
-        message: 'Enter script code:',
-        validate: input => input ? true : 'Script code is required.'
+        name: 'scriptPrefix',
+        message: 'Enter script prefix:',
+        validate: input => input ? true : 'Script prefix is required.'
       });
-      scriptCode = response.scriptCode;
+      scriptPrefix = response.scriptPrefix;
     }
     // Only prompt for runFlag if neither flag nor arg is present
     // But if neither is present, just build/publish and exit (no prompt)
-    await runPrompts(command, scriptCode, domain);
-    await runDevScript(scriptCode, command, domain, runFlag);
+    await runPrompts(command, scriptPrefix, domain);
+    await runDevScript(scriptPrefix, command, domain, runFlag);
     return;
   }
 
   if (command === 'import') {
     const inquirer = await import('inquirer');
     let domain = flags.domain;
-    let scriptCode = flags.scriptCode;
+    let scriptPrefix = flags.scriptPrefix;
     let gitRepo = flags.repo;
 
     if (!domain) {
@@ -152,14 +152,14 @@ const runFlag = args.includes('run');
       });
       domain = response.domain;
     }
-    if (!scriptCode) {
+    if (!scriptPrefix) {
       const response = await inquirer.default.prompt({
         type: 'input',
-        name: 'scriptCode',
-        message: 'Enter script code:',
-        validate: input => input ? true : 'Script code is required.'
+        name: 'scriptPrefix',
+        message: 'Enter script prefix:',
+        validate: input => input ? true : 'Script prefix is required.'
       });
-      scriptCode = response.scriptCode;
+      scriptPrefix = response.scriptPrefix;
     }
     if (!gitRepo) {
       const response = await inquirer.default.prompt({
@@ -174,7 +174,7 @@ const runFlag = args.includes('run');
     const fs = require('fs');
     const { execSync } = require('child_process');
     const path = require('path');
-    const repoDir = path.join(process.cwd(), 'accounts', domain, scriptCode);
+    const repoDir = path.join(process.cwd(), 'accounts', domain, scriptPrefix);
     if (fs.existsSync(repoDir) && fs.readdirSync(repoDir).length > 0) {
       const { confirmDelete } = await inquirer.default.prompt({
         type: 'confirm',
@@ -197,13 +197,13 @@ const runFlag = args.includes('run');
       process.exit(1);
     }
   console.log('\nNext steps:');
-  console.log(`To start development, run:\n  ./script dev --domain ${domain} --scriptCode ${scriptCode} --run`);
-  console.log(`To start production, run:\n  ./script prod --domain ${domain} --scriptCode ${scriptCode} --run`);
+  console.log(`To start development, run:\n  ./script dev --domain ${domain} --scriptPrefix ${scriptPrefix} --run`);
+  console.log(`To start production, run:\n  ./script prod --domain ${domain} --scriptPrefix ${scriptPrefix} --run`);
     return;
   }
     const inquirer = await import('inquirer');
   let domain = flags.domain;
-  let scriptCode = flags.scriptCode;
+  let scriptPrefix = flags.scriptPrefix;
   let repo = flags.repo;
   let lifecycleHooks = flags.lifecycleHooks;
   let apiKey = flags.apikey;
@@ -243,15 +243,15 @@ const runFlag = args.includes('run');
       fs.mkdirSync(domainDir, { recursive: true });
     }
     fs.writeFileSync(profilePath, JSON.stringify({ apiKey }, null, 2));
-    // 3. scriptCode
-    if (!scriptCode) {
+    // 3. scriptPrefix
+    if (!scriptPrefix) {
       const response = await inquirer.default.prompt({
         type: 'input',
-        name: 'scriptCode',
-        message: 'Enter script code:',
-        validate: input => input ? true : 'Script code is required.'
+        name: 'scriptPrefix',
+        message: 'Enter script prefix:',
+        validate: input => input ? true : 'Script prefix is required.'
       });
-      scriptCode = response.scriptCode;
+      scriptPrefix = response.scriptPrefix;
     }
     // 4. repo
     if (!repo) {
@@ -280,7 +280,7 @@ const runFlag = args.includes('run');
 
     // Clone repo and copy templates
     const { execSync } = require('child_process');
-    const repoDir = path.join(process.cwd(), 'accounts', domain, scriptCode);
+    const repoDir = path.join(process.cwd(), 'accounts', domain, scriptPrefix);
     if (fs.existsSync(repoDir) && fs.readdirSync(repoDir).length > 0) {
       const { confirmDelete } = await inquirer.default.prompt({
         type: 'confirm',
@@ -342,10 +342,10 @@ const runFlag = args.includes('run');
       console.log(`[INFO] lifecycleHooks.json created: ${JSON.stringify(hooksArr)}`);
     }
     // Pass git.repositoryUrl to createScript
-    await createScript(scriptCode, 'dev', domain, repo);
-    await createScript(scriptCode, 'prod', domain, repo);
-  console.log(`Scripts '${scriptCode}-dev' and '${scriptCode}-prod' created for domain '${domain}'.`);
+    await createScript(scriptPrefix, 'dev', domain, repo);
+    await createScript(scriptPrefix, 'prod', domain, repo);
+  console.log(`Scripts '${scriptPrefix}-dev' and '${scriptPrefix}-prod' created for domain '${domain}'.`);
   console.log('\nNext steps:');
-  console.log(`To start development, run:\n  ./script dev --domain ${domain} --scriptCode ${scriptCode} --run`);
-  console.log(`To start production, run:\n  ./script prod --domain ${domain} --scriptCode ${scriptCode} --run`);
+  console.log(`To start development, run:\n  ./script dev --domain ${domain} --scriptPrefix ${scriptPrefix} --run`);
+  console.log(`To start production, run:\n  ./script prod --domain ${domain} --scriptPrefix ${scriptPrefix} --run`);
 })();

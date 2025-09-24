@@ -7,14 +7,14 @@ function parseFlags(argv) {
   const parsed = minimist(args, {
     string: [
       'domain',
-      'scriptCode',
+      'scriptPrefix',
       'repo',
       'lifecycleHooks',
       'apikey'
     ],
     alias: {
       domain: 'd',
-      scriptCode: 's',
+      scriptPrefix: 's',
       repo: 'r',
       lifecycleHooks: 'l',
       apikey: 'a'

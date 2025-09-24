@@ -6,11 +6,11 @@ const { bundleScript } = require('./bundle');
 
 
 // Runs the script in the specified environment and watches code.js for changes
-async function runDevScript(scriptName, env, domain, run = false) {
+async function runDevScript(scriptPrefix, env, domain, run = false) {
   const { listenScriptLog } = require('./socketLog');
-  const scriptCode = `${scriptName}-${env}`;
+  const scriptCode = `${scriptPrefix}-${env}`;
   const apiKey = config.get('apiKey', domain);
-  const configPath = require('path').join(process.cwd(), 'accounts', domain, scriptName, 'config.json');
+  const configPath = require('path').join(process.cwd(), 'accounts', domain, scriptPrefix, 'config.json');
   let minifyProductionScripts = false;
   let gitRepositoryUrl = '';
   if (require('fs').existsSync(configPath)) {
@@ -20,7 +20,7 @@ async function runDevScript(scriptName, env, domain, run = false) {
       gitRepositoryUrl = configData.gitRepositoryUrl || '';
     } catch {}
   }
-  const codePath = config.getScriptCodePath(domain, scriptName);
+  const codePath = config.getScriptCodePath(domain, scriptPrefix);
   const scriptFolder = path.dirname(codePath);
   if (!fs.existsSync(scriptFolder)) {
     fs.mkdirSync(scriptFolder, { recursive: true });
@@ -48,7 +48,7 @@ async function runDevScript(scriptName, env, domain, run = false) {
     }
   });
 
-  config.ensureScriptCode(domain, scriptName);
+  config.ensureScriptCode(domain, scriptPrefix);
   if (!fs.existsSync(variablesPath)) fs.writeFileSync(variablesPath, '[]');
   if (!fs.existsSync(payloadPath)) fs.writeFileSync(payloadPath, '{}');
   if (!fs.existsSync(hooksPath)) fs.writeFileSync(hooksPath, '[]');
@@ -93,7 +93,7 @@ async function runDevScript(scriptName, env, domain, run = false) {
   if (run) {
     // Connect to socket.io and listen for script logs, but only run after socket is connected
     await new Promise((resolve) => {
-      listenScriptLog(domain, scriptName, env, apiKey, () => {
+      listenScriptLog(domain, scriptPrefix, env, apiKey, () => {
         apiClient.runScript(domain, apiKey, scriptCode).then(resolve);
       });
     });
@@ -181,13 +181,13 @@ async function runDevScript(scriptName, env, domain, run = false) {
 
 
 // Creates a script for the specified environment
-async function createScript(scriptName, env, domain, gitRepo) {
-  const scriptCode = `${scriptName}-${env}`;
+async function createScript(scriptPrefix, env, domain, gitRepo) {
+  const scriptCode = `${scriptPrefix}-${env}`;
   const apiKey = config.get('apiKey', domain);
-  config.ensureScriptCode(domain, scriptName);
-  const code = config.readScriptCode(domain, scriptName);
+  config.ensureScriptCode(domain, scriptPrefix);
+  const code = config.readScriptCode(domain, scriptPrefix);
   const envLabel = env === 'dev' ? 'Dev' : 'Prod';
-  const scriptNameLabel = `${scriptName} - ${envLabel}`;
+  const scriptNameLabel = `${scriptPrefix} - ${envLabel}`;
   // Add git.repositoryUrl if provided
   const extra = {};
   if (gitRepo) {
@@ -200,8 +200,8 @@ async function createScript(scriptName, env, domain, gitRepo) {
 const esbuild = require('esbuild');
 
 // Minify the bundled code and save as bundle.min.js
-async function minifyScript(scriptName, env, domain) {
-  const codePath = config.getScriptCodePath(domain, scriptName);
+async function minifyScript(scriptPrefix, env, domain) {
+  const codePath = config.getScriptCodePath(domain, scriptPrefix);
   const scriptFolder = path.dirname(codePath);
   const minPath = path.join(scriptFolder, 'dist', 'bundle.min.js');
   await esbuild.build({
