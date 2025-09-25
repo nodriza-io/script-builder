@@ -74,6 +74,7 @@ const runFlag = args.includes('run');
     if (watchFlag) {
       const chokidar = require('chokidar');
       console.log(`[WATCH] Watching for changes in ${testFile}...`);
+      console.log('[INFO] Press [R] to run the test again.');
       let running = false;
       const runTest = () => {
         if (running) return;
@@ -92,16 +93,49 @@ const runFlag = args.includes('run');
         console.log(`[WATCH] Change detected in ${testFile}. Rerunning tests...`);
         runTest();
       });
-      // Keep process alive
+      // Handle keyboard input for re-running tests
+      process.stdin.setRawMode(true);
       process.stdin.resume();
+      process.stdin.setEncoding('utf8');
+      process.stdin.on('data', (key) => {
+        if (key === 'r' || key === 'R') {
+          console.clear();
+          console.log('[MANUAL] Re-running tests...');
+          runTest();
+        } else if (key === '\u0003') { // Ctrl+C
+          console.log('\n[INFO] Stopping test watcher...');
+          watcher.close();
+          process.exit(0);
+        }
+      });
       return;
     } else {
-      try {
-        execSync(`DOMAIN=${domain} SCRIPT_PREFIX=${scriptPrefix} npx jest ${testFile}`, { stdio: 'inherit' });
-      } catch (err) {
-        console.error(`[ERROR] Test failed: ${err.message}`);
-        process.exit(1);
-      }
+      console.log('[INFO] Press [R] to run the test again.');
+      
+      const runSingleTest = () => {
+        try {
+          execSync(`DOMAIN=${domain} SCRIPT_PREFIX=${scriptPrefix} npx jest ${testFile}`, { stdio: 'inherit' });
+        } catch (err) {
+          console.error(`[ERROR] Test failed: ${err.message}`);
+        }
+      };
+      
+      runSingleTest();
+      
+      // Handle keyboard input for re-running tests in non-watch mode
+      process.stdin.setRawMode(true);
+      process.stdin.resume();
+      process.stdin.setEncoding('utf8');
+      process.stdin.on('data', (key) => {
+        if (key === 'r' || key === 'R') {
+          console.clear();
+          console.log('[MANUAL] Re-running tests...');
+          runSingleTest();
+        } else if (key === '\u0003') { // Ctrl+C
+          console.log('\n[INFO] Exiting...');
+          process.exit(0);
+        }
+      });
       return;
     }
   }
