@@ -1,5 +1,109 @@
 const io = require('socket.io-client');
-const { formatCookie } = require('./cookieUtil');
+
+// Color and styling utilities
+const colors = {
+  reset: '\x1b[0m',
+  bright: '\x1b[1m',
+  dim: '\x1b[2m',
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  cyan: '\x1b[36m',
+  white: '\x1b[37m',
+  gray: '\x1b[90m'
+};
+
+// Log type configurations
+const logTypes = {
+  log: {
+    color: colors.cyan,
+    label: 'CONSOLE LOG',
+    border: '-'
+  },
+  error: {
+    color: colors.red,
+    label: 'CONSOLE ERROR',
+    border: '-'
+  },
+  warn: {
+    color: colors.yellow,
+    label: 'CONSOLE WARN',
+    border: '-'
+  }
+};
+
+function formatLogHeader(type, timestamp) {
+  const config = logTypes[type] || logTypes.log;
+  const friendly = timestamp.toLocaleString('en-US', {
+    year: 'numeric', month: 'short', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false
+  });
+  
+  const header = `[${config.label}] [${friendly}]`;
+  const separator = config.border.repeat(50);
+  
+  return `\n${config.color}${colors.bright}${header}${colors.reset}\n${config.color}${separator}${colors.reset}`;
+}
+
+function printLogContent(payload, logType) {
+  if (payload && typeof payload === 'object') {
+    // Handle message content
+    if ('message' in payload) {
+      if (logType === 'error') {
+        console.log(`${colors.red}${payload.message}${colors.reset}`);
+      } else if (logType === 'warn') {
+        console.log(`${colors.yellow}${payload.message}${colors.reset}`);
+      } else {
+        console.log(`${colors.cyan}${payload.message}${colors.reset}`);
+      }
+    }
+    
+    // Handle single object
+    if ('object' in payload) {
+      console.dir(payload.object, { 
+        depth: null, 
+        colors: true,
+        compact: false
+      });
+    }
+    
+    // Handle multiple objects
+    if ('objects' in payload && Array.isArray(payload.objects)) {
+      payload.objects.forEach((obj, i) => {
+        if (payload.objects.length > 1) {
+          console.log(`${colors.gray}[Object ${i + 1}]${colors.reset}`);
+        }
+        console.dir(obj, { 
+          depth: null, 
+          colors: true,
+          compact: false
+        });
+      });
+    }
+    
+    // Handle unknown payload structure
+    if (!('message' in payload) && !('object' in payload) && !('objects' in payload)) {
+      try {
+        const pretty = JSON.stringify(payload, null, 2);
+        console.log(pretty);
+      } catch {
+        console.dir(payload, { depth: null, colors: true });
+      }
+    }
+    return;
+  }
+  
+  // Fallback for non-object payloads
+  try {
+    const pretty = JSON.stringify(payload, null, 2);
+    console.log(pretty);
+  } catch {
+    console.dir(payload, { depth: null, colors: true });
+  }
+}
 
 function listenScriptLog(domain, scriptName, env, apiKey, onConnect) {
   const scriptCode = `${scriptName}-${env}`;
@@ -15,66 +119,46 @@ function listenScriptLog(domain, scriptName, env, apiKey, onConnect) {
     },
   });
 
-  // Debug: print all incoming events
-  // socket.onAny((event, ...args) => {
-  //   if (event !== channel) {
-  //     console.log(`[SOCKET][DEBUG] Event: ${event}`);
-  //     if (args.length) console.dir(args, { depth: null, colors: true });
-  //   }
-  // });
-
   socket.on('connect', () => {
     console.log(`[SOCKET] Connected to ${originUrl}`);
     console.log(`[SOCKET] Listening for log events on channel: ${channel}`);
     if (typeof onConnect === 'function') onConnect();
   });
 
-  // Listen for log events and print the message field directly if present
+  // Handle log events with intelligent type detection based on logLevel
   socket.on('log', (payload) => {
-  // Only print log header, do not clear console here
-  const yellow = (str) => `\x1b[33m${str}\x1b[0m`;
-  const now = new Date();
-  const friendly = now.toLocaleString('en-US', {
-    year: 'numeric', month: 'short', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-    hour12: false
+    const timestamp = new Date();
+    
+    // Determine log type based on logLevel field or default to 'log'
+    let logType = 'log';
+    if (payload && payload.logLevel) {
+      switch (payload.logLevel) {
+        case 'error':
+          logType = 'error';
+          break;
+        case 'warning':
+          logType = 'warn';
+          break;
+        default:
+          logType = 'log';
+      }
+    }
+    
+    console.log(formatLogHeader(logType, timestamp));
+    printLogContent(payload, logType);
   });
-  console.log(`\n${yellow(`[LOG] [${friendly}] ` + '-'.repeat(40))}\n`);
-    if (payload && typeof payload === 'object') {
-      if ('message' in payload) {
-        console.log(payload.message);
-      }
-      if ('object' in payload) {
-        // console.log('Object:');
-        console.dir(payload.object, { depth: null, colors: true });
-      }
-      if ('objects' in payload && Array.isArray(payload.objects)) {
-        payload.objects.forEach((obj, i) => {
-          // console.log(`Object[${i}]:`);
-          console.dir(obj, { depth: null, colors: true });
-        });
-      }
-      if (!('message' in payload) && !('object' in payload) && !('objects' in payload)) {
-        try {
-          const pretty = JSON.stringify(payload, null, 2);
-          console.log(pretty);
-        } catch {
-          console.dir(payload, { depth: null, colors: true });
-        }
-      }
-      // console.log('\n');
-      // console.log('='.repeat(60));
-      return;
-    }
-    // Fallback for other payloads
-    try {
-      const pretty = JSON.stringify(payload, null, 2);
-      console.log(pretty);
-    } catch {
-      console.dir(payload, { depth: null, colors: true });
-    }
-    // console.log('\n');
-    // console.log('='.repeat(60));
+
+  // Keep these as backup in case server sends direct event types
+  socket.on('error', (payload) => {
+    const timestamp = new Date();
+    console.log(formatLogHeader('error', timestamp));
+    printLogContent(payload, 'error');
+  });
+
+  socket.on('warning', (payload) => {
+    const timestamp = new Date();
+    console.log(formatLogHeader('warn', timestamp));
+    printLogContent(payload, 'warn');
   });
 
   socket.on('disconnect', () => {
@@ -89,12 +173,6 @@ function listenScriptLog(domain, scriptName, env, apiKey, onConnect) {
     if (err && err.stack) {
       console.error('[SOCKET] Stack trace:', err.stack);
     }
-    console.error('[SOCKET] Troubleshooting tips:');
-    console.error('  - Is the domain URL correct and reachable?');
-    console.error('  - Is the Socket.IO server running and accessible?');
-    console.error('  - Does the server require authentication or custom headers/cookies?');
-    console.error('  - Is the server using the default /socket.io path and websocket transport?');
-    console.error('  - Try connecting with a simple Socket.IO client for further debugging.');
   });
 }
 

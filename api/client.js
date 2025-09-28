@@ -12,36 +12,28 @@ async function runScript(domain, apiKey, scriptCode) {
         'Accept': 'application/json',
       },
     });
+    console.log('_*****DEBUG***** response.data:', response.data);
     const result = response.data;
+    
+    // Wait a bit for socket logs to arrive before showing results
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     let chalk;
     try {
       chalk = await import('chalk');
     } catch {
       chalk = null;
     }
-    const color = (str, c) => chalk ? chalk.default[c](str) : str;
-    const bold = (str, c) => chalk ? chalk.default[c].bold(str) : str;
 
     const gray = (str) => chalk ? chalk.default.gray(str) : str;
     const green = (str) => chalk ? chalk.default.green(str) : str;
     const red = (str) => chalk ? chalk.default.red(str) : str;
-    // Errors block
+    // Errors block - simplified
     if (result.error) {
-      console.log(`\n${red('[ERRORS] ' + '-'.repeat(60))}\n`);
-      console.log(bold('Error:', 'red'), color(result.error, 'red'));
-      if (result.errorStack) {
-        console.log(color('Stack trace:', 'red'));
-        console.log(result.errorStack);
-      }
+      console.log(`\n${red('[DONE WITH ERRORS] ' + '-'.repeat(60))}\n`);
     }
-    // Input block
-    if (result.input !== undefined) {
-      const blue = (str) => chalk ? chalk.default.blue(str) : str;
-      console.log(`\n${blue('[INPUT] ' + '-'.repeat(60))}\n`);
-      console.dir(result.input, { depth: null, colors: true });
-    }
-    // Output block
-    if (result.output !== undefined) {
+    // Output block - only show if not empty
+    if (result.output !== undefined && !_.isEmpty(result.output)) {
       console.log(`\n${green('[OUTPUT] ' + '-'.repeat(60))}\n`);
       console.dir(result.output, { depth: null, colors: true });
     }
@@ -80,6 +72,7 @@ async function createScriptDoc(domain, apiKey, scriptCode, scriptName, code, ext
   }
 }
 const axios = require('axios');
+const _ = require('lodash');
 
 
 // PATCH field to /v2/script/{scriptCode}
