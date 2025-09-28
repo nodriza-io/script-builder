@@ -48,6 +48,46 @@ function formatLogHeader(type, timestamp) {
   return `\n${config.color}${colors.bright}${header}${colors.reset}\n${config.color}${separator}${colors.reset}`;
 }
 
+function formatErrorStack(errorObj) {
+  if (!errorObj || typeof errorObj !== 'object' || !errorObj.error || !errorObj.stack) {
+    return errorObj;
+  }
+
+  // Format as natural JavaScript error output
+  let output = `${colors.red}${errorObj.error}${colors.reset}\n`;
+  
+  if (typeof errorObj.stack === 'string') {
+    const stackLines = errorObj.stack.split('\n');
+    
+    for (const line of stackLines) {
+      const trimmedLine = line.trim();
+      
+      // Skip empty lines
+      if (!trimmedLine) continue;
+      
+      // Handle "at line X:Y" format
+      if (trimmedLine.startsWith('at line')) {
+        output += `${colors.gray}    at ${trimmedLine.replace('at line ', 'line ')}${colors.reset}\n`;
+        continue;
+      }
+      
+      // Handle evalmachine references
+      if (trimmedLine.startsWith('evalmachine')) {
+        output += `${colors.gray}    at ${trimmedLine}${colors.reset}\n`;
+        continue;
+      }
+      
+      // Handle code snippets (indented lines that contain actual code)
+      if (trimmedLine && !trimmedLine.startsWith('at ')) {
+        // This looks like actual code, show it with slight indentation
+        output += `${colors.dim}        ${trimmedLine}${colors.reset}\n`;
+      }
+    }
+  }
+  
+  return output.trim();
+}
+
 function printLogContent(payload, logType) {
   if (payload && typeof payload === 'object') {
     // Handle message content
@@ -61,13 +101,19 @@ function printLogContent(payload, logType) {
       }
     }
     
-    // Handle single object
+    // Handle single object - check for stack formatting
     if ('object' in payload) {
-      console.dir(payload.object, { 
-        depth: null, 
-        colors: true,
-        compact: false
-      });
+      if (payload.object && payload.object.error && payload.object.stack) {
+        // Format as natural error stack
+        console.log(formatErrorStack(payload.object));
+      } else {
+        // Regular object formatting
+        console.dir(payload.object, { 
+          depth: null, 
+          colors: true,
+          compact: false
+        });
+      }
     }
     
     // Handle multiple objects
@@ -76,11 +122,18 @@ function printLogContent(payload, logType) {
         if (payload.objects.length > 1) {
           console.log(`${colors.gray}[Object ${i + 1}]${colors.reset}`);
         }
-        console.dir(obj, { 
-          depth: null, 
-          colors: true,
-          compact: false
-        });
+        
+        if (obj && obj.error && obj.stack) {
+          // Format as natural error stack
+          console.log(formatErrorStack(obj));
+        } else {
+          // Regular object formatting
+          console.dir(obj, { 
+            depth: null, 
+            colors: true,
+            compact: false
+          });
+        }
       });
     }
     
@@ -127,6 +180,8 @@ function listenScriptLog(domain, scriptName, env, apiKey, onConnect) {
 
   // Handle log events with intelligent type detection based on logLevel
   socket.on('log', (payload) => {
+    console.log('*** log payload:', JSON.stringify(payload, null, 2));
+
     const timestamp = new Date();
     
     // Determine log type based on logLevel field or default to 'log'
@@ -150,6 +205,7 @@ function listenScriptLog(domain, scriptName, env, apiKey, onConnect) {
 
   // Keep these as backup in case server sends direct event types
   socket.on('error', (payload) => {
+    console.log('*** error payload:', JSON.stringify(payload, null, 2));
     const timestamp = new Date();
     console.log(formatLogHeader('error', timestamp));
     printLogContent(payload, 'error');

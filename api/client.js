@@ -12,7 +12,7 @@ async function runScript(domain, apiKey, scriptCode) {
         'Accept': 'application/json',
       },
     });
-    console.log('_*****DEBUG***** response.data:', response.data);
+    // console.log('[DEBUG] runScript response:', response.data);
     const result = response.data;
     
     // Wait a bit for socket logs to arrive before showing results
