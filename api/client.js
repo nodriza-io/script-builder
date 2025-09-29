@@ -30,7 +30,7 @@ async function runScript(domain, apiKey, scriptCode) {
     const red = (str) => chalk ? chalk.default.red(str) : str;
     // Errors block - simplified
     if (result.error) {
-      console.log(`\n${red('[DONE WITH ERRORS] ' + '-'.repeat(60))}\n`);
+      console.log(`\n${red('[DONE WITH ERRORS]')}\n`);
     }
     // Output block - only show if not empty
     if (result.output !== undefined && !_.isEmpty(result.output)) {

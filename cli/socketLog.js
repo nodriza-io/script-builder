@@ -31,6 +31,11 @@ const logTypes = {
     color: colors.yellow,
     label: 'CONSOLE WARN',
     border: '-'
+  },
+  info: {
+    color: colors.blue,
+    label: 'CONSOLE INFO',
+    border: '-'
   }
 };
 
@@ -96,6 +101,8 @@ function printLogContent(payload, logType) {
         console.log(`${colors.red}${payload.message}${colors.reset}`);
       } else if (logType === 'warn') {
         console.log(`${colors.yellow}${payload.message}${colors.reset}`);
+      } else if (logType === 'info') {
+        console.log(`${colors.blue}${payload.message}${colors.reset}`);
       } else {
         console.log(`${colors.cyan}${payload.message}${colors.reset}`);
       }
@@ -178,43 +185,29 @@ function listenScriptLog(domain, scriptName, env, apiKey, onConnect) {
     if (typeof onConnect === 'function') onConnect();
   });
 
-  // Handle log events with intelligent type detection based on logLevel
+  // Handle specific log type events
   socket.on('log', (payload) => {
-    console.log('*** log payload:', JSON.stringify(payload, null, 2));
-
     const timestamp = new Date();
-    
-    // Determine log type based on logLevel field or default to 'log'
-    let logType = 'log';
-    if (payload && payload.logLevel) {
-      switch (payload.logLevel) {
-        case 'error':
-          logType = 'error';
-          break;
-        case 'warning':
-          logType = 'warn';
-          break;
-        default:
-          logType = 'log';
-      }
-    }
-    
-    console.log(formatLogHeader(logType, timestamp));
-    printLogContent(payload, logType);
+    console.log(formatLogHeader('log', timestamp));
+    printLogContent(payload, 'log');
   });
 
-  // Keep these as backup in case server sends direct event types
   socket.on('error', (payload) => {
-    console.log('*** error payload:', JSON.stringify(payload, null, 2));
     const timestamp = new Date();
     console.log(formatLogHeader('error', timestamp));
     printLogContent(payload, 'error');
   });
 
-  socket.on('warning', (payload) => {
+  socket.on('warn', (payload) => {
     const timestamp = new Date();
     console.log(formatLogHeader('warn', timestamp));
     printLogContent(payload, 'warn');
+  });
+
+  socket.on('info', (payload) => {
+    const timestamp = new Date();
+    console.log(formatLogHeader('info', timestamp));
+    printLogContent(payload, 'info');
   });
 
   socket.on('disconnect', () => {
