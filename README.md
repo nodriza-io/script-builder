@@ -65,6 +65,9 @@ If you run a command without flags, the CLI will prompt for missing values:
 
 ./script import
 # Prompts for domain, scriptCode, repo
+
+./script test
+# Prompts for domain, scriptCode, optionally file and watch
 ```
 
 ### One-liner mode (no prompts)
@@ -92,6 +95,12 @@ If you provide all flags, the CLI runs non-interactively:
   --domain dev10.prolibu.com \
   --scriptCode hook-sample \
   --repo https://github.com/nodriza-io/hook-sample.git
+
+./script test \
+  --domain dev10.prolibu.com \
+  --scriptCode hook-sample \
+  --file integration-test \
+  --watch
 ```
 
 ### Run logic
@@ -198,31 +207,79 @@ Auth: `Authorization: Bearer <PROLIBU_TOKEN>`
 
 # Test System
 
-This project uses **Jest** for automated testing of CLI commands and generated script structure.
+This project includes **two types of testing**:
 
-## What do the tests cover?
+## 1. CLI Framework Tests
+Uses **Jest** for automated testing of CLI commands and generated script structure.
+
+### What do the CLI tests cover?
 - Script creation and template file generation
 - Validation of `profile.json` and `config.json` configuration
 - Execution of CLI commands (`create`, `dev`, etc.) and error handling
 
-## Where are the tests?
+### Where are the CLI tests?
 Tests are located in the `/test` folder, mainly in `commands.test.js`.
 
-## How to run the tests?
-Run the following command from the project root:
-
-```
+### How to run CLI tests?
+```bash
 npm test
 ```
 
-This will execute all tests and display results in the console.
+## 2. Individual Script Testing
 
-## Cleanup
-Before each test, generated files and folders are removed to ensure a clean and reproducible environment.
-Important: Scripts created during tests are not deleted from the Prolibu platform, should be deleted manually.
+Each script can have its own test suite for integration testing with external APIs and business logic validation.
 
-## Required dependencies
-- Jest (already included in devDependencies)
+### Script Test Structure
+Tests are located in each script's folder:
+```
+accounts/<domain>/<scriptPrefix>/test/
+├── index.test.js           # Default test file
+├── <custom-name>.test.js   # Custom test files
+└── ...
+```
+
+### Running Script Tests
+
+**Basic usage:**
+```bash
+./script test \
+  --domain <domain> \
+  --scriptPrefix <scriptPrefix>
+```
+
+**With custom test file:**
+```bash
+./script test \
+  --domain <domain> \
+  --scriptPrefix <scriptPrefix> \
+  --file <testFileName>
+```
+
+**With watch mode (auto-rerun on changes):**
+```bash
+./script test \
+  --domain <domain> \
+  --scriptPrefix <scriptPrefix> \
+  --file <testFileName> \
+  --watch
+```
+
+### Interactive Testing Features
+- **Watch Mode**: Automatically re-runs tests when files change
+- **Manual Re-run**: Press `R` to re-run tests manually
+- **Environment Variables**: Automatically injects `DOMAIN` and `SCRIPT_PREFIX`
+- **Live Feedback**: Real-time test results and error reporting
+
+## Test Environment Setup
+- **Jest** (included in devDependencies)
+- **Environment Variables**: `DOMAIN` and `SCRIPT_PREFIX` automatically available
+- **Global Utilities**: Access to shared test utilities and API clients
+- **Faker Support**: Generate realistic test data with `@faker-js/faker`
+
+## Cleanup Notes
+- CLI tests: Generated files are automatically cleaned before each test
+- Script tests: Manual cleanup may be required for external API resources
+- Important: Scripts created during tests are not deleted from the Prolibu platform automatically
 
 # Pending for documentation
 - explain how lifecycle events are managed

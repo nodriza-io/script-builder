@@ -7,12 +7,12 @@ const fs = require('fs');
 const path = require('path');
 
 // Import Prolibu APIs
-const ProlibuApi = require('../../../../lib/vendors/Prolibu/ProlibuApi');
-const UserApi = require('../../../../lib/vendors/Prolibu/UserApi');
+const ProlibuApi = require('../../../../lib/vendors/prolibu/ProlibuApi');
+const UserApi = require('../../../../lib/vendors/prolibu/UserApi');
 
 // Use DOMAIN and SCRIPT_CODE from environment variables
 const domain = process.env.DOMAIN;
-const scriptCode = process.env.SCRIPT_CODE;
+const scriptPrefix = process.env.SCRIPT_PREFIX;
 const profilePath = path.join(__dirname, '..', '..', 'profile.json');
 let apiKey;
 let prolibuApi;
@@ -21,7 +21,7 @@ let userApi;
 // Helper to fail fast if env/config is missing
 beforeAll(() => {
   if (!domain) throw new Error('DOMAIN env variable is required');
-  if (!scriptCode) throw new Error('SCRIPT_CODE env variable is required');
+  if (!scriptPrefix) throw new Error('SCRIPT_CODE env variable is required');
   if (!fs.existsSync(profilePath)) throw new Error(`profile.json not found at ${profilePath}`);
   const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
   apiKey = profile.apiKey;
@@ -40,7 +40,7 @@ beforeAll(() => {
   });
 });
 
-describe(`Testing script "${scriptCode}"`, () => {
+describe(`Testing script "${scriptPrefix}"`, () => {
   describe('Authentication & Permissions', () => {
     it('Should have valid apiKey in profile.json', () => {
       expect(apiKey).toBeDefined();
@@ -86,8 +86,8 @@ describe(`Testing script "${scriptCode}"`, () => {
     });
 
     it('Should get script with findOne', async () => {
-      console.log('Fetching script with code:', scriptCode);
-      const scriptDev = await prolibuApi.findOne('script', `${scriptCode}-dev`, {
+      console.log('Fetching script with prefix:', scriptPrefix);
+      const scriptDev = await prolibuApi.findOne('script', `${scriptPrefix}-dev`, {
         select: 'scriptName',
       });
 
