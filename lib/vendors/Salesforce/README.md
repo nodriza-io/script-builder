@@ -5,7 +5,7 @@ REST client to interact with Salesforce API using the same pattern as the Prolib
 ## Installation
 
 ```javascript
-const SalesforceRestApi = require('./lib/vendors/Salesforce/SalesforceRestApi');
+const SalesforceApi = require('./lib/vendors/Salesforce/SalesforceApi');
 ```
 
 ## Configuration
@@ -24,7 +24,7 @@ Your Salesforce organization's URL:
 From your Salesforce External Client App (see setup below).
 
 ```javascript
-const salesforce = new SalesforceRestApi({
+const salesforce = new SalesforceApi({
   instanceUrl: 'https://myorg.salesforce.com',
   consumerKey: 'your_consumer_key_here',
   consumerSecret: 'your_consumer_secret_here',
@@ -223,7 +223,7 @@ async function getAccessTokenPassword() {
 
 // Usage
 const auth = await getAccessTokenPassword();
-const salesforce = new SalesforceRestApi({
+const salesforce = new SalesforceApi({
   instanceUrl: auth.instanceUrl,
   accessToken: auth.accessToken
 });
@@ -306,10 +306,10 @@ const loginUrl = 'https://test.salesforce.com';
 
 ### Account and Contact Management
 ```javascript
-const SalesforceRestApi = require('./lib/vendors/Salesforce/SalesforceRestApi');
+const SalesforceApi = require('./lib/vendors/Salesforce/SalesforceApi');
 
 async function manageAccountsAndContacts() {
-  const salesforce = new SalesforceRestApi({
+  const salesforce = new SalesforceApi({
     instanceUrl: 'https://myorg.salesforce.com',
     accessToken: process.env.SALESFORCE_ACCESS_TOKEN
   });
@@ -358,7 +358,7 @@ async function manageAccountsAndContacts() {
 ### Data Synchronization
 ```javascript
 async function synchronizeData() {
-  const salesforce = new SalesforceRestApi({
+  const salesforce = new SalesforceApi({
     instanceUrl: process.env.SALESFORCE_INSTANCE_URL,
     accessToken: process.env.SALESFORCE_ACCESS_TOKEN
   });
@@ -404,7 +404,7 @@ require('dotenv').config();
 async function initSalesforce() {
   // Option 1: Use existing token
   if (process.env.SALESFORCE_ACCESS_TOKEN) {
-    return new SalesforceRestApi({
+    return new SalesforceApi({
       instanceUrl: process.env.SALESFORCE_INSTANCE_URL,
       accessToken: process.env.SALESFORCE_ACCESS_TOKEN
     });
@@ -412,7 +412,7 @@ async function initSalesforce() {
   
   // Option 2: Authenticate with username/password
   const auth = await getAccessTokenPassword();
-  return new SalesforceRestApi({
+  return new SalesforceApi({
     instanceUrl: auth.instanceUrl,
     accessToken: auth.accessToken
   });

@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Import Prolibu APIs
-const ProlibuRestApi = require('../../../../lib/vendors/Prolibu/ProlibuRestApi');
+const ProlibuApi = require('../../../../lib/vendors/Prolibu/ProlibuApi');
 const UserApi = require('../../../../lib/vendors/Prolibu/UserApi');
 
 // Use DOMAIN and SCRIPT_CODE from environment variables
@@ -15,7 +15,7 @@ const domain = process.env.DOMAIN;
 const scriptCode = process.env.SCRIPT_CODE;
 const profilePath = path.join(__dirname, '..', '..', 'profile.json');
 let apiKey;
-let prolibuRestApi;
+let prolibuApi;
 let userApi;
 
 // Helper to fail fast if env/config is missing
@@ -29,7 +29,7 @@ beforeAll(() => {
   if (!apiKey.length) throw new Error('apiKey in profile.json is empty');
   
   // Initialize APIs
-  prolibuRestApi = new ProlibuRestApi({
+  prolibuApi = new ProlibuApi({
     domain,
     apiKey
   });
@@ -87,7 +87,7 @@ describe(`Testing script "${scriptCode}"`, () => {
 
     it('Should get script with findOne', async () => {
       console.log('Fetching script with code:', scriptCode);
-      const scriptDev = await prolibuRestApi.findOne('script', `${scriptCode}-dev`, {
+      const scriptDev = await prolibuApi.findOne('script', `${scriptCode}-dev`, {
         select: 'scriptName',
       });
 
