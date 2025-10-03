@@ -166,7 +166,7 @@ accounts/
     │   ├── variables.json   # Variables for the script
     │   ├── payload.json     # Payload data for the script
     │   ├── lifecycleHooks.json # Lifecycle hooks configuration
-    │   ├── config.json      # Script-level config (e.g., minifyProductionScripts)
+    │   ├── config.json      # Script-level config (e.g., minifyProductionCode, removeComments)
     │   ├── lib/             # Local script utilities
     │   │   └── Utils.js     # Example utility
     │   └── README.md        # Script documentation
@@ -229,6 +229,44 @@ You can import libraries in your scripts from:
   ```
 
 This allows you to share utilities and vendor integrations across all scripts in the project, or keep script-specific logic in the local lib folder.
+
+## Script Configuration
+
+Each script has a `config.json` file with the following options:
+
+```json
+{
+  "minifyProductionCode": false,
+  "removeComments": true
+}
+```
+
+### Configuration Options:
+
+- **`minifyProductionCode`** (boolean, default: `false`)
+  - When `true`, minifies the bundled code for production (`./script prod`)
+  - Only applies to production environment
+  - Reduces file size and obfuscates code
+  - Works with both regular and watch mode
+
+- **`removeComments`** (boolean, default: `true`)
+  - When `true`, removes all comments from the bundled code
+  - Applies to both dev and prod environments
+  - Reduces bundle size and keeps uploaded code clean
+  - Works with both regular and watch mode
+
+**Example usage:**
+```bash
+# Production with minification and comment removal
+./script prod --domain dev10.prolibu.com --scriptPrefix my-script --watch
+# If config.json has minifyProductionCode: true and removeComments: true
+# The uploaded code will be minified and without comments
+
+# Development with comment removal only
+./script dev --domain dev10.prolibu.com --scriptPrefix my-script --watch
+# If config.json has removeComments: true
+# The uploaded code will have comments removed but won't be minified
+```
 
 
 ## API Contract (summary)

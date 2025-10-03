@@ -1,3 +1,4 @@
 {
-  "minifyProductionScripts": true
+  "minifyProductionCode": false,
+  "removeComments": true
 }

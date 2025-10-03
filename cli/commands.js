@@ -11,12 +11,14 @@ async function runDevScript(scriptPrefix, env, domain, watch = false, fileName =
   const scriptCode = `${scriptPrefix}-${env}`;
   const apiKey = config.get('apiKey', domain);
   const configPath = require('path').join(process.cwd(), 'accounts', domain, scriptPrefix, 'config.json');
-  let minifyProductionScripts = false;
+  let minifyProductionCode = false;
+  let removeComments = false;
   let gitRepositoryUrl = '';
   if (require('fs').existsSync(configPath)) {
     try {
       const configData = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
-      minifyProductionScripts = !!configData.minifyProductionScripts;
+      minifyProductionCode = !!configData.minifyProductionCode;
+      removeComments = !!configData.removeComments;
       gitRepositoryUrl = configData.gitRepositoryUrl || '';
     } catch {}
   }
@@ -53,26 +55,41 @@ async function runDevScript(scriptPrefix, env, domain, watch = false, fileName =
   if (!fs.existsSync(payloadPath)) fs.writeFileSync(payloadPath, '{}');
   if (!fs.existsSync(hooksPath)) fs.writeFileSync(hooksPath, '[]');
 
-  // Initial bundle and PATCH for code.js
-  fs.mkdirSync(path.dirname(distPath), { recursive: true });
-  let bundledCode;
-  if (env === 'prod' && minifyProductionScripts) {
-    // Minify and bundle for production if config is set
+  // Helper function to process bundled code based on config
+  const processBundledCode = async (entryPath, outputPath, shouldMinify, shouldRemoveComments) => {
     const esbuild = require('esbuild');
-    const minPath = require('path').join(path.dirname(distPath), 'bundle.min.js');
-    await esbuild.build({
-      entryPoints: [codePath],
-      outfile: minPath,
-      minify: true,
+    const buildOptions = {
+      entryPoints: [entryPath],
+      outfile: outputPath,
       bundle: true,
       platform: 'node',
       format: 'cjs',
-    });
-    bundledCode = require('fs').readFileSync(minPath, 'utf8');
-    console.log(`[MINIFY] Production build: minify enabled in config.json, script was minified.`);
-  } else {
-    await bundleScript(codePath, distPath);
-    bundledCode = require('fs').readFileSync(distPath, 'utf8');
+    };
+    
+    // Apply minify only if requested (prod + minifyProductionCode)
+    if (shouldMinify) {
+      buildOptions.minify = true;
+    }
+    
+    // Apply legalComments: 'none' to remove comments if requested
+    if (shouldRemoveComments) {
+      buildOptions.legalComments = 'none';
+    }
+    
+    await esbuild.build(buildOptions);
+    return require('fs').readFileSync(outputPath, 'utf8');
+  };
+
+  // Initial bundle and PATCH for code.js
+  fs.mkdirSync(path.dirname(distPath), { recursive: true });
+  const shouldMinify = env === 'prod' && minifyProductionCode;
+  const bundledCode = await processBundledCode(codePath, distPath, shouldMinify, removeComments);
+  
+  if (shouldMinify) {
+    console.log(`[MINIFY] Production build: minifyProductionCode enabled in config.json, script was minified.`);
+  }
+  if (removeComments) {
+    console.log(`[COMMENTS] Comments removed: removeComments enabled in config.json.`);
   }
   // Upload variables
   const variables = JSON.parse(fs.readFileSync(variablesPath, 'utf8'));
@@ -130,8 +147,8 @@ async function runDevScript(scriptPrefix, env, domain, watch = false, fileName =
     process.stdout.write('\x1Bc');
     console.log(`[WATCH] ${event} detected in ${filePath}. Bundling and uploading...`);
     try {
-      await bundleScript(codePath, distPath);
-      const bundledCode = fs.readFileSync(distPath, 'utf8');
+      const shouldMinify = env === 'prod' && minifyProductionCode;
+      const bundledCode = await processBundledCode(codePath, distPath, shouldMinify, removeComments);
       await apiClient.patchScript(domain, apiKey, scriptCode, bundledCode, 'code');
       await apiClient.runScript(domain, apiKey, scriptCode);
       const chalk = (await import('chalk')).default;
