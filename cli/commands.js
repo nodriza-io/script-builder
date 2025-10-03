@@ -71,9 +71,10 @@ async function runDevScript(scriptPrefix, env, domain, watch = false, fileName =
       buildOptions.minify = true;
     }
     
-    // Apply legalComments: 'none' to remove comments if requested
+    // Remove comments (including JSDoc) using both minifySyntax and legalComments
     if (shouldRemoveComments) {
-      buildOptions.legalComments = 'none';
+      buildOptions.minifySyntax = true;  // Removes most comments and simplifies syntax
+      buildOptions.legalComments = 'none';  // Removes ALL legal/license comments including JSDoc
     }
     
     await esbuild.build(buildOptions);
@@ -87,9 +88,6 @@ async function runDevScript(scriptPrefix, env, domain, watch = false, fileName =
   
   if (shouldMinify) {
     console.log(`[MINIFY] Production build: minifyProductionCode enabled in config.json, script was minified.`);
-  }
-  if (removeComments) {
-    console.log(`[COMMENTS] Comments removed: removeComments enabled in config.json.`);
   }
   // Upload variables
   const variables = JSON.parse(fs.readFileSync(variablesPath, 'utf8'));
@@ -152,7 +150,7 @@ async function runDevScript(scriptPrefix, env, domain, watch = false, fileName =
       await apiClient.patchScript(domain, apiKey, scriptCode, bundledCode, 'code');
       await apiClient.runScript(domain, apiKey, scriptCode);
       const chalk = (await import('chalk')).default;
-      console.log(chalk.green(`[SYNC] Bundled code uploaded for ${scriptCode}`));
+      console.log(chalk.green.bold(`[SYNC] Bundled code uploaded for ${scriptCode}`));
     } catch (err) {
       console.error(`[ERROR] Bundling/upload failed: ${err.message}`);
     }

@@ -31,6 +31,7 @@ async function runScript(domain, apiKey, scriptCode) {
     // Errors block - simplified
     if (result.error) {
       console.log(`\n${red('[DONE WITH ERRORS]')}\n`);
+      console.error(red(result.error?.error || result.error));
     }
     // Output block - only show if not empty
     if (result.output !== undefined && !_.isEmpty(result.output)) {
