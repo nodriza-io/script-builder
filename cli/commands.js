@@ -5,8 +5,8 @@ const fs = require('fs');
 const { bundleScript } = require('./bundle');
 
 
-// Runs the script in the specified environment and watches code.js for changes
-async function runDevScript(scriptPrefix, env, domain, run = false) {
+// Runs the script in the specified environment and watches for changes
+async function runDevScript(scriptPrefix, env, domain, watch = false, fileName = 'index') {
   const { listenScriptLog } = require('./socketLog');
   const scriptCode = `${scriptPrefix}-${env}`;
   const apiKey = config.get('apiKey', domain);
@@ -20,15 +20,15 @@ async function runDevScript(scriptPrefix, env, domain, run = false) {
       gitRepositoryUrl = configData.gitRepositoryUrl || '';
     } catch {}
   }
-  const codePath = config.getScriptCodePath(domain, scriptPrefix);
+  const codePath = config.getScriptEntryPath(domain, scriptPrefix, fileName);
   const scriptFolder = path.dirname(codePath);
   if (!fs.existsSync(scriptFolder)) {
     fs.mkdirSync(scriptFolder, { recursive: true });
   }
   const distPath = path.join(scriptFolder, 'dist', 'bundle.js');
-  const variablesPath = codePath.replace('code.js', 'variables.json');
-  const payloadPath = codePath.replace('code.js', 'payload.json');
-  const hooksPath = codePath.replace('code.js', 'lifecycleHooks.json');
+  const variablesPath = path.join(scriptFolder, 'variables.json');
+  const payloadPath = path.join(scriptFolder, 'payload.json');
+  const hooksPath = path.join(scriptFolder, 'lifecycleHooks.json');
   // Setup README.md watcher after scriptFolder is initialized
   const readmePath = path.join(scriptFolder, 'README.md');
   if (!fs.existsSync(readmePath)) {
@@ -90,7 +90,7 @@ async function runDevScript(scriptPrefix, env, domain, run = false) {
   if (gitRepositoryUrl) {
     await apiClient.patchScript(domain, apiKey, scriptCode, { repositoryUrl: gitRepositoryUrl }, 'git');
   }
-  if (run) {
+  if (watch) {
     // Connect to socket.io and listen for script logs, but only run after socket is connected
     await new Promise((resolve) => {
       listenScriptLog(domain, scriptPrefix, env, apiKey, () => {
@@ -115,34 +115,34 @@ async function runDevScript(scriptPrefix, env, domain, run = false) {
         }
       });
     }
-  }
-    // Watch code.js and lib/
-    const libPath = path.join(scriptFolder, 'lib');
-    const chokidar = require('chokidar');
-    const watcher = chokidar.watch([codePath, libPath], {
-      persistent: true,
-      ignoreInitial: true,
-      depth: 99,
-      awaitWriteFinish: true,
-    });
-    const triggerBundle = async (event, filePath) => {
-  // Clear the console on every file change/add/unlink
-  process.stdout.write('\x1Bc');
-  console.log(`[WATCH] ${event} detected in ${filePath}. Bundling and uploading...`);
-      try {
-        await bundleScript(codePath, distPath);
-        const bundledCode = fs.readFileSync(distPath, 'utf8');
-        await apiClient.patchScript(domain, apiKey, scriptCode, bundledCode, 'code');
-        await apiClient.runScript(domain, apiKey, scriptCode);
-        const chalk = (await import('chalk')).default;
-        console.log(chalk.green(`[SYNC] Bundled code uploaded for ${scriptCode}`));
-      } catch (err) {
-        console.error(`[ERROR] Bundling/upload failed: ${err.message}`);
-      }
-    };
-    watcher.on('add', (filePath) => triggerBundle('add', filePath));
-    watcher.on('change', (filePath) => triggerBundle('change', filePath));
-    watcher.on('unlink', (filePath) => triggerBundle('unlink', filePath));
+  
+  // Watch code entry file and lib/
+  const libPath = path.join(scriptFolder, 'lib');
+  const chokidar = require('chokidar');
+  const watcher = chokidar.watch([codePath, libPath], {
+    persistent: true,
+    ignoreInitial: true,
+    depth: 99,
+    awaitWriteFinish: true,
+  });
+  const triggerBundle = async (event, filePath) => {
+    // Clear the console on every file change/add/unlink
+    process.stdout.write('\x1Bc');
+    console.log(`[WATCH] ${event} detected in ${filePath}. Bundling and uploading...`);
+    try {
+      await bundleScript(codePath, distPath);
+      const bundledCode = fs.readFileSync(distPath, 'utf8');
+      await apiClient.patchScript(domain, apiKey, scriptCode, bundledCode, 'code');
+      await apiClient.runScript(domain, apiKey, scriptCode);
+      const chalk = (await import('chalk')).default;
+      console.log(chalk.green(`[SYNC] Bundled code uploaded for ${scriptCode}`));
+    } catch (err) {
+      console.error(`[ERROR] Bundling/upload failed: ${err.message}`);
+    }
+  };
+  watcher.on('add', (filePath) => triggerBundle('add', filePath));
+  watcher.on('change', (filePath) => triggerBundle('change', filePath));
+  watcher.on('unlink', (filePath) => triggerBundle('unlink', filePath));
 
     // Watch variables.json
     fs.watchFile(variablesPath, { interval: 500 }, async (curr, prev) => {
@@ -174,19 +174,20 @@ async function runDevScript(scriptPrefix, env, domain, run = false) {
         }
       });
     }
-  // If not in run mode, exit after setup
-  if (!run) {
+  }
+  // If not in watch mode, exit after setup
+  if (!watch) {
     process.exit(0);
   }
 }
 
 
 // Creates a script for the specified environment
-async function createScript(scriptPrefix, env, domain, gitRepo) {
+async function createScript(scriptPrefix, env, domain, gitRepo, fileName = 'index') {
   const scriptCode = `${scriptPrefix}-${env}`;
   const apiKey = config.get('apiKey', domain);
-  config.ensureScriptCode(domain, scriptPrefix);
-  const code = config.readScriptCode(domain, scriptPrefix);
+  config.ensureScriptCode(domain, scriptPrefix, fileName);
+  const code = config.readScriptCode(domain, scriptPrefix, fileName);
   const envLabel = env === 'dev' ? 'Dev' : 'Prod';
   const scriptNameLabel = `${scriptPrefix} - ${envLabel}`;
   // Add git.repositoryUrl if provided

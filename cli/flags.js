@@ -10,14 +10,21 @@ function parseFlags(argv) {
       'scriptPrefix',
       'repo',
       'lifecycleHooks',
-      'apikey'
+      'apikey',
+      'file'
+    ],
+    boolean: [
+      'watch',
+      'run'
     ],
     alias: {
       domain: 'd',
       scriptPrefix: 's',
       repo: 'r',
       lifecycleHooks: 'l',
-      apikey: 'a'
+      apikey: 'a',
+      file: 'f',
+      watch: 'w'
     },
     default: {}
   });

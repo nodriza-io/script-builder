@@ -49,7 +49,7 @@ describe('Script Builder CLI Commands', () => {
 
     it('should create all template files in the new script folder', () => {
       const expectedFiles = [
-        'code.js',
+        'index.js',
         'variables.json',
         'payload.json',
         'lifecycleHooks.json',
@@ -80,7 +80,7 @@ describe('Script Builder CLI Commands', () => {
   });
 
   describe('Dev Command', () => {
-    it('should execute dev command "no --run" without errors', () => {
+    it('should execute dev command "no --watch" without errors', () => {
       let devError = null;
       const cmd = `./script dev \
         --domain ${config.domain} \
@@ -159,10 +159,10 @@ describe('Script Builder CLI Commands', () => {
       });
     });
 
-    it('should update code.js with console.log and publish with dev', () => {
+    it('should update index.js with console.log and publish with dev', () => {
       const newCode = `console.log('hola mundo!');output=1980;// comment`;
-      fs.writeFileSync(path.join(scriptFolder, 'code.js'), newCode);
-      expect(fs.readFileSync(path.join(scriptFolder, 'code.js'), 'utf8')).toBe(newCode);
+      fs.writeFileSync(path.join(scriptFolder, 'index.js'), newCode);
+      expect(fs.readFileSync(path.join(scriptFolder, 'index.js'), 'utf8')).toBe(newCode);
 
       let devError = null;
       const cmd = `./script dev --domain ${config.domain} --scriptPrefix ${scriptCode}`;
@@ -243,7 +243,7 @@ describe('Script Builder CLI Commands', () => {
   });
 
   describe('Prod Command', () => {
-    it('should execute prod command "no --run" without errors', () => {
+    it('should execute prod command "no --watch" without errors', () => {
       let prodError = null;
       const cmd = `./script prod \
         --domain ${config.domain} \

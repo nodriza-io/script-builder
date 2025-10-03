@@ -30,6 +30,11 @@ const runFlag = args.includes('run');
     console.log('  --repo <gitRepo>');
     console.log('  --lifecycleHooks <hooks>');
     console.log('  --apikey <apiKey>');
+    console.log('Options for dev/prod:');
+    console.log('  --domain <domain>');
+    console.log('  --scriptPrefix <scriptPrefix>');
+    console.log('  --file <fileName>        Entry file name (default: index)');
+    console.log('  --watch, -w              Watch for changes and sync');
     console.log('Options for test:');
     console.log('  --domain <domain>');
     console.log('  --scriptPrefix <scriptPrefix>');
@@ -143,7 +148,9 @@ const runFlag = args.includes('run');
     const inquirer = await import('inquirer');
     let domain = flags.domain;
     let scriptPrefix = flags.scriptPrefix;
-    let runFlag = (typeof flags.run !== 'undefined') ? true : args.includes('run');
+    let fileName = flags.file || 'index';
+    // Support both --watch and legacy --run flag
+    let watchFlag = flags.watch || flags.run || args.includes('--watch') || args.includes('run');
 
     // Interactive prompts for missing values
     if (!domain) {
@@ -164,10 +171,8 @@ const runFlag = args.includes('run');
       });
       scriptPrefix = response.scriptPrefix;
     }
-    // Only prompt for runFlag if neither flag nor arg is present
-    // But if neither is present, just build/publish and exit (no prompt)
     await runPrompts(command, scriptPrefix, domain);
-    await runDevScript(scriptPrefix, command, domain, runFlag);
+    await runDevScript(scriptPrefix, command, domain, watchFlag, fileName);
     return;
   }
 
@@ -332,10 +337,10 @@ const runFlag = args.includes('run');
     try {
       execSync(`git clone ${repo} ${repoDir}`, { stdio: 'inherit' });
       console.log(`[GIT] Repository cloned to ${repoDir}`);
-      // Copy only lib, code.js, lifecycleHooks.json, payload.json, variables.json, config.json from templates
+      // Copy only lib, index.js, lifecycleHooks.json, payload.json, variables.json, config.json from templates
       const templateDir = path.join(process.cwd(), 'templates');
       const filesToCopy = [
-        'code.js',
+        'index.js',
         'lifecycleHooks.json',
         'payload.json',
         'variables.json',
@@ -376,8 +381,8 @@ const runFlag = args.includes('run');
       console.log(`[INFO] lifecycleHooks.json created: ${JSON.stringify(hooksArr)}`);
     }
     // Pass git.repositoryUrl to createScript
-    await createScript(scriptPrefix, 'dev', domain, repo);
-    await createScript(scriptPrefix, 'prod', domain, repo);
+    await createScript(scriptPrefix, 'dev', domain, repo, 'index');
+    await createScript(scriptPrefix, 'prod', domain, repo, 'index');
   console.log(`Scripts '${scriptPrefix}-dev' and '${scriptPrefix}-prod' created for domain '${domain}'.`);
   console.log('\nNext steps:');
   console.log(`To start development, run:\n  ./script dev --domain ${domain} --scriptPrefix ${scriptPrefix} --run`);

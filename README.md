@@ -77,40 +77,73 @@ If you provide all flags, the CLI runs non-interactively:
 ./script create \
   --domain dev10.prolibu.com \
   --apikey <your-api-key> \
-  --scriptCode hook-sample \
+  --scriptPrefix hook-sample \
   --repo https://github.com/nodriza-io/hook-sample.git \
   --lifecycleHooks "Invoice,Contact"
 
 ./script dev \
   --domain dev10.prolibu.com \
-  --scriptCode hook-sample \
-  --run # Only runs and watches if --run is present
+  --scriptPrefix hook-sample \
+  --watch # Watch for changes and sync
+
+# Use a different entry file
+./script dev \
+  --domain dev10.prolibu.com \
+  --scriptPrefix hook-sample \
+  --file other-index \
+  --watch
 
 ./script prod \
   --domain dev10.prolibu.com \
-  --scriptCode hook-sample \
-  --run
+  --scriptPrefix hook-sample \
+  --watch
 
 ./script import \
   --domain dev10.prolibu.com \
-  --scriptCode hook-sample \
+  --scriptPrefix hook-sample \
   --repo https://github.com/nodriza-io/hook-sample.git
 
 ./script test \
   --domain dev10.prolibu.com \
-  --scriptCode hook-sample \
+  --scriptPrefix hook-sample \
   --file integration-test \
   --watch
 ```
 
-### Run logic
-* If you provide `--run`, the CLI will run and watch the script after build/publish.
-* While in `--run` mode, you can listen to real-time console logs from your script via socket connection (live output in your terminal).
-* If you do NOT provide `--run`, it will only build and publish, then exit (no prompt).
+### Entry File Configuration
+
+By default, Script Builder CLI uses `index.js` as the main entry point for your script. You can specify an alternative entry file using the `--file` flag:
+
+```bash
+# Default: uses index.js
+./script dev --domain dev10.prolibu.com --scriptPrefix my-script --watch
+
+# Custom: uses custom-entry.js
+./script dev --domain dev10.prolibu.com --scriptPrefix my-script --file custom-entry --watch
+```
+
+**File Structure:**
+```
+accounts/
+  dev10.prolibu.com/
+    my-script/
+      index.js           ← Default entry file
+      custom-entry.js    ← Alternative entry file
+      lib/
+        utils.js
+      test/
+        index.test.js
+```
+
+### Watch Mode
+* If you provide `--watch` (or `-w`), the CLI will watch for file changes and automatically sync after build/publish.
+* While in watch mode, you can listen to real-time console logs from your script via socket connection (live output in your terminal).
+* If you do NOT provide `--watch`, it will only build and publish once, then exit.
+* Legacy `--run` flag is still supported for backwards compatibility.
 
 ### Real-time log streaming
 
-When you run a script in development mode with the `--run` flag (e.g., `./script dev --domain <domain> --scriptCode <scriptName> --run`), Script Builder CLI establishes a real-time connection to the Prolibu platform vis socket.io to stream console logs directly to your terminal.
+When you run a script in development mode with the `--watch` flag (e.g., `./script dev --domain <domain> --scriptPrefix <scriptName> --watch`), Script Builder CLI establishes a real-time connection to the Prolibu platform via socket.io to stream console logs directly to your terminal.
 
 - **Live Output:** Console logs from your script are streamed directly to your terminal as the script executes, allowing you to monitor behavior and debug in real time.
 - **Automatic Reconnection:** If the connection drops, the CLI will attempt to reconnect automatically.

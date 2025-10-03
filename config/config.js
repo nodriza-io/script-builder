@@ -35,23 +35,27 @@ function getScriptCodePath(domain, scriptName) {
   return path.join(process.cwd(), 'accounts', domain, scriptName, 'code.js');
 }
 
-function ensureScriptCode(domain, scriptName) {
-  const codePath = getScriptCodePath(domain, scriptName);
+function getScriptEntryPath(domain, scriptName, fileName = 'index') {
+  return path.join(process.cwd(), 'accounts', domain, scriptName, `${fileName}.js`);
+}
+
+function ensureScriptCode(domain, scriptName, fileName = 'index') {
+  const codePath = getScriptEntryPath(domain, scriptName, fileName);
   if (!fs.existsSync(codePath)) {
     fs.mkdirSync(path.dirname(codePath), { recursive: true });
     fs.writeFileSync(codePath, '// Your script code here\n');
   }
 }
 
-function readScriptCode(domain, scriptName) {
-  const codePath = getScriptCodePath(domain, scriptName);
+function readScriptCode(domain, scriptName, fileName = 'index') {
+  const codePath = getScriptEntryPath(domain, scriptName, fileName);
   if (!fs.existsSync(codePath)) return '';
   return fs.readFileSync(codePath, 'utf8');
 }
 
-function writeScriptCode(domain, scriptName, code) {
-  const codePath = getScriptCodePath(domain, scriptName);
-  ensureScriptCode(domain, scriptName);
+function writeScriptCode(domain, scriptName, code, fileName = 'index') {
+  const codePath = getScriptEntryPath(domain, scriptName, fileName);
+  ensureScriptCode(domain, scriptName, fileName);
   fs.writeFileSync(codePath, code);
 }
 
@@ -61,6 +65,7 @@ module.exports = {
   getProfilePath,
   ensureConfig,
   getScriptCodePath,
+  getScriptEntryPath,
   ensureScriptCode,
   readScriptCode,
   writeScriptCode,
