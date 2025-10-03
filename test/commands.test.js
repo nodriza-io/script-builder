@@ -51,7 +51,6 @@ describe('Script Builder CLI Commands', () => {
       const expectedFiles = [
         'index.js',
         'variables.json',
-        'payload.json',
         'lifecycleHooks.json',
         'lib',
         'config.json',
@@ -197,48 +196,6 @@ describe('Script Builder CLI Commands', () => {
         expect(remote.code).toContain('hola mundo!');
       });
 
-    });
-
-    it('should update payload.json', () => {
-      const newPayload = {
-        my: 'house'
-      };
-      fs.writeFileSync(path.join(scriptFolder, 'payload.json'), JSON.stringify(newPayload, null, 2));
-      expect(fs.readFileSync(path.join(scriptFolder, 'payload.json'), 'utf8')).toBe(JSON.stringify(newPayload, null, 2));
-
-      let devError = null;
-      const cmd = `./script dev --domain ${config.domain} --scriptPrefix ${scriptCode}`;
-      try {
-        execSync(cmd, { stdio: 'inherit' });
-      } catch (e) {
-        devError = e;
-      }
-      expect(devError).toBeNull();
-    });
-
-    it('should run the script to check the payload', () => {
-      const axios = require('axios');
-      const apiKey = config.apiKey;
-      const domain = config.domain;
-      const scriptName = scriptCode;
-      const scriptCodeRemote = `${scriptName}-dev`;
-      const baseUrl = `https://${domain}/v2/script/run?scriptId=${scriptCodeRemote}&my=house`;
-      const headers = { Authorization: `Bearer ${apiKey}` };
-
-      return axios.get(baseUrl, { headers }).then(response => {
-        const remote = response.data;
-
-        // console.log('remote', JSON.stringify(remote, null, 2));
-
-        // check for code 200
-        expect(response.status).toBe(200);
-        expect(remote).toHaveProperty('output');
-        expect(remote.output).toBe(1980);
-        expect(remote).toHaveProperty('eventData');
-        expect(remote.eventData).toHaveProperty('query');
-        expect(remote.eventData.query).toHaveProperty('my', 'house');
-        expect(remote).toHaveProperty('error', null);
-      });
     });
   });
 

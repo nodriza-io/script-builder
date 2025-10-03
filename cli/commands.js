@@ -29,7 +29,6 @@ async function runDevScript(scriptPrefix, env, domain, watch = false, fileName =
   }
   const distPath = path.join(scriptFolder, 'dist', 'bundle.js');
   const variablesPath = path.join(scriptFolder, 'variables.json');
-  const payloadPath = path.join(scriptFolder, 'payload.json');
   const hooksPath = path.join(scriptFolder, 'lifecycleHooks.json');
   // Setup README.md watcher after scriptFolder is initialized
   const readmePath = path.join(scriptFolder, 'README.md');
@@ -52,7 +51,6 @@ async function runDevScript(scriptPrefix, env, domain, watch = false, fileName =
 
   config.ensureScriptCode(domain, scriptPrefix);
   if (!fs.existsSync(variablesPath)) fs.writeFileSync(variablesPath, '[]');
-  if (!fs.existsSync(payloadPath)) fs.writeFileSync(payloadPath, '{}');
   if (!fs.existsSync(hooksPath)) fs.writeFileSync(hooksPath, '[]');
 
   // Helper function to process bundled code based on config
@@ -95,11 +93,6 @@ async function runDevScript(scriptPrefix, env, domain, watch = false, fileName =
   // Upload lifecycleHooks
   const hooks = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
   await apiClient.patchScript(domain, apiKey, scriptCode, hooks, 'lifecycleHooks');
-  // Upload payload only in dev
-  if (env === 'dev') {
-    const payload = JSON.parse(fs.readFileSync(payloadPath, 'utf8'));
-    await apiClient.patchScript(domain, apiKey, scriptCode, payload, 'payload');
-  }
   // Upload code and git repository URL
   await apiClient.patchScript(domain, apiKey, scriptCode, bundledCode, 'code');
   if (gitRepositoryUrl) {
@@ -169,26 +162,15 @@ async function runDevScript(scriptPrefix, env, domain, watch = false, fileName =
       }
     });
 
-    // Watch payload.json only in dev mode
-    if (env === 'dev') {
-      fs.watchFile(payloadPath, { interval: 500 }, async (curr, prev) => {
-        if (curr.mtime !== prev.mtime) {
-          const payload = JSON.parse(fs.readFileSync(payloadPath, 'utf8'));
-          await apiClient.patchScript(domain, apiKey, scriptCode, payload, 'payload');
-          await apiClient.runScript(domain, apiKey, scriptCode);
-          console.log(`Payload for '${scriptCode}' updated after save (dev only).`);
-        }
-      });
-      // Watch lifecycleHooks.json
-      fs.watchFile(hooksPath, { interval: 500 }, async (curr, prev) => {
-        if (curr.mtime !== prev.mtime) {
-          const hooks = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
-          await apiClient.patchScript(domain, apiKey, scriptCode, hooks, 'lifecycleHooks');
-          await apiClient.runScript(domain, apiKey, scriptCode);
-          console.log(`lifecycleHooks for '${scriptCode}' updated after save (dev only).`);
-        }
-      });
-    }
+    // Watch lifecycleHooks.json
+    fs.watchFile(hooksPath, { interval: 500 }, async (curr, prev) => {
+      if (curr.mtime !== prev.mtime) {
+        const hooks = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+        await apiClient.patchScript(domain, apiKey, scriptCode, hooks, 'lifecycleHooks');
+        await apiClient.runScript(domain, apiKey, scriptCode);
+        console.log(`lifecycleHooks for '${scriptCode}' updated after save.`);
+      }
+    });
   }
   // If not in watch mode, exit after setup
   if (!watch) {

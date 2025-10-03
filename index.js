@@ -9,7 +9,6 @@ const argv = process.argv;
 const flags = parseFlags(argv);
 const args = argv.slice(2);
 const command = args[0];
-const runFlag = args.includes('run');
 
 
 
@@ -149,8 +148,7 @@ const runFlag = args.includes('run');
     let domain = flags.domain;
     let scriptPrefix = flags.scriptPrefix;
     let fileName = flags.file || 'index';
-    // Support both --watch and legacy --run flag
-    let watchFlag = flags.watch || flags.run || args.includes('--watch') || args.includes('run');
+    let watchFlag = flags.watch || args.includes('--watch');
 
     // Interactive prompts for missing values
     if (!domain) {
@@ -235,9 +233,10 @@ const runFlag = args.includes('run');
       console.error(`[ERROR] Failed to import repository: ${err.message}`);
       process.exit(1);
     }
+  const chalk = (await import('chalk')).default;
   console.log('\nNext steps:');
-  console.log(`To start development, run:\n  ./script dev --domain ${domain} --scriptPrefix ${scriptPrefix} --run`);
-  console.log(`To start production, run:\n  ./script prod --domain ${domain} --scriptPrefix ${scriptPrefix} --run`);
+  console.log(`To start development, run:\n  ${chalk.green(`./script dev --domain ${domain} --scriptPrefix ${scriptPrefix} --watch`)}`);
+  console.log(`To start production, run:\n  ${chalk.green(`./script prod --domain ${domain} --scriptPrefix ${scriptPrefix} --watch`)}`);
     return;
   }
     const inquirer = await import('inquirer');
@@ -307,7 +306,7 @@ const runFlag = args.includes('run');
       const response = await inquirer.default.prompt({
         type: 'input',
         name: 'lifecycleHooks',
-        message: 'Add lifecycleHooks? (comma separated, e.g. Invoice,Contact)',
+        message: 'Add lifecycleHooks? (comma separated, e.g. Company,Contact,Deal)',
         default: '',
       });
       lifecycleHooks = response.lifecycleHooks;
@@ -337,12 +336,11 @@ const runFlag = args.includes('run');
     try {
       execSync(`git clone ${repo} ${repoDir}`, { stdio: 'inherit' });
       console.log(`[GIT] Repository cloned to ${repoDir}`);
-      // Copy only lib, index.js, lifecycleHooks.json, payload.json, variables.json, config.json from templates
+      // Copy only lib, index.js, lifecycleHooks.json, variables.json, config.json from templates
       const templateDir = path.join(process.cwd(), 'templates');
       const filesToCopy = [
         'index.js',
         'lifecycleHooks.json',
-        'payload.json',
         'variables.json',
         'config.json'
       ];
@@ -383,8 +381,9 @@ const runFlag = args.includes('run');
     // Pass git.repositoryUrl to createScript
     await createScript(scriptPrefix, 'dev', domain, repo, 'index');
     await createScript(scriptPrefix, 'prod', domain, repo, 'index');
+  const chalk = (await import('chalk')).default;
   console.log(`Scripts '${scriptPrefix}-dev' and '${scriptPrefix}-prod' created for domain '${domain}'.`);
   console.log('\nNext steps:');
-  console.log(`To start development, run:\n  ./script dev --domain ${domain} --scriptPrefix ${scriptPrefix} --run`);
-  console.log(`To start production, run:\n  ./script prod --domain ${domain} --scriptPrefix ${scriptPrefix} --run`);
+  console.log(`To start development, run:\n  ${chalk.green(`./script dev --domain ${domain} --scriptPrefix ${scriptPrefix} --watch`)}`);
+  console.log(`To start production, run:\n  ${chalk.green(`./script prod --domain ${domain} --scriptPrefix ${scriptPrefix} --watch`)}`);
 })();

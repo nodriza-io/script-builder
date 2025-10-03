@@ -139,7 +139,6 @@ accounts/
 * If you provide `--watch` (or `-w`), the CLI will watch for file changes and automatically sync after build/publish.
 * While in watch mode, you can listen to real-time console logs from your script via socket connection (live output in your terminal).
 * If you do NOT provide `--watch`, it will only build and publish once, then exit.
-* Legacy `--run` flag is still supported for backwards compatibility.
 
 ### Real-time log streaming
 

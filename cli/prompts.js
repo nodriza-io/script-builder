@@ -21,7 +21,7 @@ async function runPrompts(env, scriptName, domain) {
     const { lifecycleHooks } = await inquirer.default.prompt({
       type: 'input',
       name: 'lifecycleHooks',
-      message: 'Add lifecycleHooks? (comma separated, e.g. Invoice,Contact)',
+      message: 'Add lifecycleHooks? (comma separated, e.g. Company,Contact,Deal)',
       default: '',
     });
      if (lifecycleHooks && lifecycleHooks.trim()) {
