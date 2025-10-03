@@ -147,11 +147,14 @@ describe('Script Builder CLI Commands', () => {
       return axios.get(baseUrl, { headers, params }).then(response => {
         const remote = response.data;
 
+        // console.log('remote', JSON.stringify(remote, null, 2));
+
         // check for code 200
         expect(response.status).toBe(200);
         expect(remote).toHaveProperty('output');
-        expect(remote).toHaveProperty('input');
-        expect(remote.input).toHaveProperty('test');
+        expect(remote).toHaveProperty('eventData');
+        expect(remote.eventData).toHaveProperty('query');
+        expect(remote.eventData.query).toHaveProperty('test', '123');
         expect(remote).toHaveProperty('error', null);
       });
     });
@@ -225,14 +228,15 @@ describe('Script Builder CLI Commands', () => {
       return axios.get(baseUrl, { headers }).then(response => {
         const remote = response.data;
 
-        // console.log('*___remote payload', JSON.stringify(remote, null, 2));
+        // console.log('remote', JSON.stringify(remote, null, 2));
 
         // check for code 200
         expect(response.status).toBe(200);
         expect(remote).toHaveProperty('output');
         expect(remote.output).toBe(1980);
-        expect(remote).toHaveProperty('input');
-        expect(remote.input).toHaveProperty('my', 'house');
+        expect(remote).toHaveProperty('eventData');
+        expect(remote.eventData).toHaveProperty('query');
+        expect(remote.eventData.query).toHaveProperty('my', 'house');
         expect(remote).toHaveProperty('error', null);
       });
     });

@@ -134,7 +134,8 @@ async function runDevScript(scriptPrefix, env, domain, run = false) {
         const bundledCode = fs.readFileSync(distPath, 'utf8');
         await apiClient.patchScript(domain, apiKey, scriptCode, bundledCode, 'code');
         await apiClient.runScript(domain, apiKey, scriptCode);
-        console.log(`[SYNC] Bundled code uploaded for ${scriptCode}`);
+        const chalk = (await import('chalk')).default;
+        console.log(chalk.green(`[SYNC] Bundled code uploaded for ${scriptCode}`));
       } catch (err) {
         console.error(`[ERROR] Bundling/upload failed: ${err.message}`);
       }
