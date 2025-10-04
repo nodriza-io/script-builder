@@ -336,36 +336,23 @@ const command = args[0];
     try {
       execSync(`git clone ${repo} ${repoDir}`, { stdio: 'inherit' });
       console.log(`[GIT] Repository cloned to ${repoDir}`);
-      // Copy only lib, index.js, lifecycleHooks.json, variables.json, config.json from templates
+      
+      // Copy all files and folders from templates directory
       const templateDir = path.join(process.cwd(), 'templates');
-      const filesToCopy = [
-        'index.js',
-        'lifecycleHooks.json',
-        'variables.json',
-        'config.json'
-      ];
-      filesToCopy.forEach(file => {
-        const src = path.join(templateDir, file);
-        const dest = path.join(repoDir, file);
-        if (fs.existsSync(src)) fs.copyFileSync(src, dest);
-      });
-      // Copy lib folder recursively
-      const srcLib = path.join(templateDir, 'lib');
-      const destLib = path.join(repoDir, 'lib');
-      if (fs.existsSync(srcLib)) {
-        const copyLibRecursive = (src, dest) => {
-          fs.mkdirSync(dest, { recursive: true });
-          fs.readdirSync(src).forEach(child => {
-            const srcChild = path.join(src, child);
-            const destChild = path.join(dest, child);
-            if (fs.statSync(srcChild).isDirectory()) {
-              copyLibRecursive(srcChild, destChild);
-            } else {
-              fs.copyFileSync(srcChild, destChild);
-            }
-          });
-        };
-        copyLibRecursive(srcLib, destLib);
+      if (fs.existsSync(templateDir)) {
+        fs.readdirSync(templateDir).forEach(item => {
+          const src = path.join(templateDir, item);
+          const dest = path.join(repoDir, item);
+          const stat = fs.statSync(src);
+          
+          if (stat.isDirectory()) {
+            // Copy directory recursively
+            fs.cpSync(src, dest, { recursive: true });
+          } else {
+            // Copy file
+            fs.copyFileSync(src, dest);
+          }
+        });
       }
       console.log(`[INIT] Script structure initialized from templates in ${repoDir}`);
     } catch (err) {
