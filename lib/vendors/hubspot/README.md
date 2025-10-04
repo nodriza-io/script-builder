@@ -5,7 +5,9 @@ A standardized API adapter for integrating HubSpot CRM with the Prolibu platform
 ## Table of Contents
 
 - [Overview](#overview)
-- [Installation](#installation)
+- [Installation](#instaconst contact = await hubspotApi.findOne('contacts', contactId, {
+  select: 'firstname lastname email'  // Prolibu style: spaces
+});tion)
 - [Authentication](#authentication)
 - [Usage](#usage)
 - [API Methods](#api-methods)
@@ -112,14 +114,13 @@ console.log('Created contact:', contact);
 ### Find Records
 
 ```javascript
-// Find contacts with filtering
 const contacts = await hubspotApi.find('contacts', {
-  select: 'firstname, lastname, email, phone',
-  lastname: 'Smith',
-  email: { $exists: true },
+  select: 'firstname lastname email phone',  // Prolibu style: spaces
+  where: {
+    lastname: 'Smith'
+  },
   limit: 10,
-  page: 1,
-  sort: '-createdate'  // Sort by createdate descending
+  page: 1
 });
 
 console.log('Found contacts:', contacts);
@@ -313,7 +314,7 @@ await hubspotApi.authenticate();
 ```javascript
 // Only fetch fields you need
 const contact = await hubspotApi.findOne('contacts', id, {
-  select: 'firstname, lastname, email'
+  select: 'firstname lastname email'  // Prolibu style: spaces
 });
 ```
 
@@ -443,14 +444,22 @@ module.exports = {
 
 ### 2. Properties Parameter Format
 
-❌ **WRONG:**
+The `select` parameter accepts **space-separated** (Prolibu style) or **comma-separated** field names. The adapter automatically converts them to the format HubSpot expects:
+
+✅ **CORRECT (Prolibu style - recommended):**
 ```javascript
-params.properties = select.split(',').map(f => f.trim());  // Array
+select: 'firstname lastname email'  // Spaces - converted automatically
 ```
 
-✅ **CORRECT:**
+✅ **ALSO CORRECT (legacy):**
 ```javascript
-params.properties = select;  // Comma-separated string
+select: 'firstname, lastname, email'  // Commas - also works
+```
+
+**Behind the scenes (line 543):**
+```javascript
+properties = select.replace(/\s+/g, ',').split(',').filter(f => f);
+// Converts both formats to array: ['firstname', 'lastname', 'email']
 ```
 
 ### 3. Associations in UPDATE
