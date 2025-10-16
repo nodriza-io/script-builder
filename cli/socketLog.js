@@ -185,6 +185,10 @@ function listenScriptLog(domain, scriptName, env, apiKey, onConnect) {
     if (typeof onConnect === 'function') onConnect();
   });
 
+  // socket.onAny((eventName, ...args) => {
+  //   console.log(`[SOCKET ON ANY] Event: ${eventName}`, args);
+  // });
+
   // Handle specific log type events
   socket.on('log', (payload) => {
     const timestamp = new Date();
