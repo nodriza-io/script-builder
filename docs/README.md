@@ -61,9 +61,9 @@ flowchart TB
 
     subgraph UseCases["Use Cases"]
         API_RUN_USE["• Manual script execution<br/>• Testing & debugging<br/>• On-demand jobs"]
-        ENDPOINT_REQUEST_USE["• Webhook receivers<br/>• Third-party integrations<br/>• Custom API endpoints"]
+        ENDPOINT_REQUEST_USE["• Webhook receivers<br/>• Outbound integrations (Prolibu to Third Party)<br/>• Custom API endpoints"]
         SCHEDULED_TASK_USE["• Periodic data sync<br/>• Report generation<br/>• Automated cleanups"]
-        LIFECYCLE_HOOK_USE["• No-limits parametrizations<br/>• Real-time sync to external systems<br/>• Complex data validation<br/>• Audit logging"]
+        LIFECYCLE_HOOK_USE["• No-tech-limits parametrizations<br/>• Real-time sync to external systems<br/>• Complex data validation<br/>• Audit logging"]
     end
 
     API_RUN_NAME --> API_RUN
