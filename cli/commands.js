@@ -10,6 +10,16 @@ async function runDevScript(scriptPrefix, env, domain, watch = false, fileName =
   const { listenScriptLog } = require('./socketLog');
   const scriptCode = `${scriptPrefix}-${env}`;
   const apiKey = config.get('apiKey', domain);
+  
+  // 🆕 Ensure script exists before attempting to sync
+  console.log(`🔍 Checking if script '${scriptCode}' exists...`);
+  const scriptExists = await apiClient.ensureScriptExists(domain, apiKey, scriptCode);
+  
+  if (!scriptExists) {
+    console.error(`❌ Could not create or verify script '${scriptCode}'. Exiting.`);
+    process.exit(1);
+  }
+  
   const configPath = require('path').join(process.cwd(), 'accounts', domain, scriptPrefix, 'config.json');
   let minifyProductionCode = false;
   let removeComments = false;

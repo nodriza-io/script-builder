@@ -75,6 +75,63 @@ async function createScriptDoc(domain, apiKey, scriptCode, scriptName, code, ext
 const axios = require('axios');
 const _ = require('lodash');
 
+/**
+ * Check if script exists, create if not
+ * @param {string} domain - Domain (e.g., 'dev11.prolibu.com')
+ * @param {string} apiKey - API key for authentication
+ * @param {string} scriptCode - Script code (e.g., 'deal-report-dev')
+ * @returns {Promise<boolean>} true if exists or created successfully
+ */
+async function ensureScriptExists(domain, apiKey, scriptCode) {
+  const checkUrl = `https://${domain}/v2/script/${scriptCode}`;
+  
+  try {
+    // Try to GET the script to see if it exists
+    await axios.get(checkUrl, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Accept': 'application/json',
+      },
+    });
+    
+    // Script exists
+    return true;
+  } catch (error) {
+    // If 404, script doesn't exist - create it
+    if (error.response?.status === 404) {
+      console.log(`🔧 Script '${scriptCode}' not found. Creating...`);
+      
+      try {
+        const createUrl = `https://${domain}/v2/script`;
+        await axios.post(createUrl, {
+          scriptCode,
+          scriptName: scriptCode,
+          code: '// Script will be synced from local files',
+          active: true,
+          readme: '# Script created automatically',
+          variables: [],
+          lifecycleHooks: []
+        }, {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        });
+        
+        console.log(`✅ Script '${scriptCode}' created successfully!`);
+        return true;
+      } catch (createError) {
+        console.error(`❌ Failed to create script '${scriptCode}':`, createError.response?.data || createError.message);
+        return false;
+      }
+    }
+    
+    // Other error (not 404)
+    console.error(`❌ Error checking script '${scriptCode}':`, error.response?.data || error.message);
+    return false;
+  }
+}
 
 // PATCH field to /v2/script/{scriptCode}
 async function patchScript(domain, apiKey, scriptCode, value, field) {
@@ -94,6 +151,7 @@ async function patchScript(domain, apiKey, scriptCode, value, field) {
 }
 
 module.exports = {
+  ensureScriptExists,
   patchScript,
   createScriptDoc,
   runScript,
