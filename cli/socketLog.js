@@ -171,6 +171,9 @@ function listenScriptLog(domain, scriptName, env, apiKey, onConnect) {
   const originUrl = domain.startsWith('http') ? domain : `https://${domain}`;
   console.log(`[SOCKET] Attempting to connect to: ${originUrl}`);
   console.log(`[SOCKET] Using channel: ${channel}`);
+  
+  let isFirstConnection = true;
+  
   const socket = io(originUrl, {
     transports: ['websocket'],
     auth: {
@@ -180,9 +183,13 @@ function listenScriptLog(domain, scriptName, env, apiKey, onConnect) {
   });
 
   socket.on('connect', () => {
-    console.log(`[SOCKET] Connected to ${originUrl}`);
-    console.log(`[SOCKET] Listening for log events on channel: ${channel}`);
-    if (typeof onConnect === 'function') onConnect();
+    if (isFirstConnection) {
+      console.log(`[SOCKET] Connected to ${originUrl}`);
+      isFirstConnection = false;
+      if (typeof onConnect === 'function') onConnect();
+    } else {
+      console.log(`${colors.green}[SOCKET] Reconnected to ${originUrl}${colors.reset}`);
+    }
   });
 
   // socket.onAny((eventName, ...args) => {
@@ -215,17 +222,12 @@ function listenScriptLog(domain, scriptName, env, apiKey, onConnect) {
   });
 
   socket.on('disconnect', () => {
-    console.log('[SOCKET] Disconnected');
+    console.log(`${colors.red}[SOCKET] Disconnected${colors.reset}`);
   });
 
   socket.on('connect_error', (err) => {
-    console.error('[SOCKET] Connection error:', err.message);
-    console.error('[SOCKET] Details:');
-    console.error(`  Domain: ${originUrl}`);
-    console.error(`  Channel: ${channel}`);
-    if (err && err.stack) {
-      console.error('[SOCKET] Stack trace:', err.stack);
-    }
+    console.error(`${colors.gray}[SOCKET] Connection error: ${err.message} ${colors.reset}`);
+    // console.error(`         Domain: ${originUrl} Channel: ${channel}`);
   });
 }
 

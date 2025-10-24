@@ -11,8 +11,6 @@ async function runDevScript(scriptPrefix, env, domain, watch = false, fileName =
   const scriptCode = `${scriptPrefix}-${env}`;
   const apiKey = config.get('apiKey', domain);
   
-  // 🆕 Ensure script exists before attempting to sync
-  console.log(`🔍 Checking if script '${scriptCode}' exists...`);
   const scriptExists = await apiClient.ensureScriptExists(domain, apiKey, scriptCode);
   
   if (!scriptExists) {
